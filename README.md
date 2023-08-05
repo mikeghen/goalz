@@ -20,7 +20,18 @@ Goalz is a decentralized application you can use to manage multiple savings goal
     * How much to deposit?
     * How often should the deposit be made?
 
-### `SavingsGoal` Contract
+### Usability
+* This contract mints a non-transferable ERC20 token that represents the balance a user holds in Goalz
+    * This token is used to track the balance a user has in portfolio and wallet apps
+    * These tokens are glzTokens (glxUSDC, glxETH, etc.)
+* This contract mints a non-transferable ERC721 token that represents each goal a user creates
+    * This token is used to track the goals a user has in portfolio and wallet apps
+    * These are Goalz (GOALZ)
+* (Optionally) Goalz has a rewards token the Goalie (GOALIE)
+    * Users earn Goalies for making deposits and reaching goals
+    * Goalies can be redeemed for rewards
+
+### `Goalz` Contract
 
 #### Inheritance
 * @openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol

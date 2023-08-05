@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "hardhat/console.sol";
 
 contract Goalz is ERC721, ERC721Enumerable {
     using Counters for Counters.Counter;
@@ -28,7 +29,9 @@ contract Goalz is ERC721, ERC721Enumerable {
     mapping(uint => AutomatedDeposit) public automatedDeposits;
 
     event GoalCreated(address indexed saver, uint indexed goalId, string what, string why, uint targetAmount, uint targetDate);
+    event GoalDeleted(address indexed saver, uint indexed goalId);
     event DepositMade(address indexed saver, uint indexed goalId, uint amount);
+    event WithdrawMade(address indexed saver, uint indexed goalId, uint amount);
     event AutomatedDepositCreated(address indexed saver, uint indexed goalId, uint amount, uint frequency);
     event AutomatedDepositCanceled(address indexed saver, uint indexed goalId);
 
@@ -63,6 +66,15 @@ contract Goalz is ERC721, ERC721Enumerable {
         emit GoalCreated(msg.sender, goalId, what, why, targetAmount, targetDate);
     }
 
+    function deleteGoal(uint goalId) external goalExists(goalId) isGoalOwner(goalId) {
+        require(savingsGoals[goalId].currentAmount == 0, "Goal has funds, withdraw them first");
+        delete savingsGoals[goalId];
+        delete automatedDeposits[goalId];
+        _burn(goalId);
+        
+        emit GoalDeleted(msg.sender, goalId);
+    }
+
     function deposit(uint goalId, uint amount) external goalExists(goalId) {
         require(amount > 0, "Deposit amount should be greater than 0");
         SavingsGoal storage goal = savingsGoals[goalId];
@@ -74,27 +86,29 @@ contract Goalz is ERC721, ERC721Enumerable {
         emit DepositMade(msg.sender, goalId, amount);
     }
 
-    function withdraw(uint goalId) external goalExists(goalId) isGoalOwner(goalId) {
+    function withdraw(uint goalId) public goalExists(goalId) isGoalOwner(goalId) {
         SavingsGoal storage goal = savingsGoals[goalId];
-        require(goal.currentAmount > 0, "No funds available to withdraw");
+        require(goal.currentAmount > 0, "No funds to withdraw");
 
         uint amount = goal.currentAmount;
         goal.currentAmount = 0;
         depositToken.transfer(msg.sender, amount);
+
+        emit WithdrawMade(msg.sender, goalId, amount);
     }
 
     function automateDeposit(uint goalId, uint amount, uint frequency) external goalExists(goalId) {
         require(amount > 0, "Automated deposit amount should be greater than 0");
         require(frequency > 0, "Automated deposit frequency should be greater than 0");
         require(automatedDeposits[goalId].amount == 0, "Automated deposit already exists for this goal");
+        
         depositToken.transferFrom(msg.sender, address(this), amount);
-
         automatedDeposits[goalId] = AutomatedDeposit(amount, frequency, block.timestamp);
 
         emit AutomatedDepositCreated(msg.sender, goalId, amount, frequency);
     }
 
-    function cancelAutomateDeposit(uint goalId) external goalExists(goalId) isGoalOwner(goalId) {
+    function cancelAutomatedDeposit(uint goalId) external goalExists(goalId) isGoalOwner(goalId) {
         delete automatedDeposits[goalId];
         emit AutomatedDepositCanceled(msg.sender, goalId);
     }
@@ -106,7 +120,7 @@ contract Goalz is ERC721, ERC721Enumerable {
 
         SavingsGoal storage goal = savingsGoals[goalId];
         uint amount = _automatedDeposit.amount;
-        depositToken.transferFrom(msg.sender, address(this), amount);
+        depositToken.transferFrom(ownerOf(goalId), address(this), amount);
         goal.currentAmount += amount;
         _automatedDeposit.lastDeposit = block.timestamp;
 
