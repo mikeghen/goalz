@@ -4,7 +4,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "./GoalzUSD.sol";
 import "hardhat/console.sol";
+
 
 contract Goalz is ERC721, ERC721Enumerable {
     using Counters for Counters.Counter;
@@ -25,6 +27,7 @@ contract Goalz is ERC721, ERC721Enumerable {
     }
 
     IERC20 public depositToken;
+    GoalzUSD public goalzToken;
     mapping(uint => SavingsGoal) public savingsGoals;
     mapping(uint => AutomatedDeposit) public automatedDeposits;
 
@@ -37,6 +40,7 @@ contract Goalz is ERC721, ERC721Enumerable {
 
     constructor(address _depositTokenAddress) ERC721("Goalz", "GOALZ") {
         depositToken = IERC20(_depositTokenAddress);
+        goalzToken = new GoalzUSD();
     }
 
     modifier goalExists(uint goalId) {
@@ -81,6 +85,7 @@ contract Goalz is ERC721, ERC721Enumerable {
         require(goal.currentAmount + amount <= goal.targetAmount, "Deposit exceeds the goal target amount");
 
         depositToken.transferFrom(msg.sender, address(this), amount);
+        goalzToken.mint(msg.sender, amount);
         goal.currentAmount += amount;
 
         emit DepositMade(msg.sender, goalId, amount);
@@ -92,6 +97,7 @@ contract Goalz is ERC721, ERC721Enumerable {
 
         uint amount = goal.currentAmount;
         goal.currentAmount = 0;
+        goalzToken.burn(msg.sender, amount);
         depositToken.transfer(msg.sender, amount);
 
         emit WithdrawMade(msg.sender, goalId, amount);
@@ -121,6 +127,7 @@ contract Goalz is ERC721, ERC721Enumerable {
         SavingsGoal storage goal = savingsGoals[goalId];
         uint amount = _automatedDeposit.amount;
         depositToken.transferFrom(ownerOf(goalId), address(this), amount);
+        goalzToken.mint(ownerOf(goalId), amount);
         goal.currentAmount += amount;
         _automatedDeposit.lastDeposit = block.timestamp;
 
