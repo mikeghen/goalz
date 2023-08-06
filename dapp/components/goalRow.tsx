@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useContractRead } from "wagmi";
 import { GOALZ_ADDRESS, GOALZ_ABI } from "../config/constants";
+import { approve, deposit } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
+import toast from "react-hot-toast";
 
 interface GoalData {
     what: string;
@@ -18,7 +20,11 @@ const GoalRow = ({ goalIndex }) => {
     const { address } = useAccount();
     const [isExpanded, setIsExpanded] = useState(false);
     const [depositAmount, setDepositAmount] = useState("");
+    const [autoDepositAmount, setAutoDepositAmount] = useState("");
+    const [autoDepositFrequency, setAutoDepositFrequency] = useState("");
     const [goalProgress, setGoalProgress] = useState(0);
+    const [isDepositLoading, setIsDepositLoading] = useState(false);
+    const [isApproveLoading, setIsApproveLoading] = useState(false);
     const [goalData, setGoalData] = useState<GoalData>({
         what: "",
         why: "",
@@ -42,6 +48,7 @@ const GoalRow = ({ goalIndex }) => {
         if (goal.data) {
             const targetDate = new Date(goal.data.targetDate.mul(1000).toNumber());
             const goalProgress = goal.data.currentAmount.mul(100).div(goal.data.targetAmount).toNumber();
+            console.log("goalProgress", goalProgress);
             setGoalProgress(goalProgress);
             setGoalData({
                 what: goal.data[0],
@@ -70,14 +77,45 @@ const GoalRow = ({ goalIndex }) => {
 
     // ---
     // Handle depositing funds into a goal
-    const handleDeposit = () => {
+    const handleDeposit = async () => {
         // Get the amount to deposit
         const amount = (document.getElementById(`deposit-amount-${goalIndex}`) as HTMLInputElement).value;
+
+        // Try to make a deposit to this goalIndex
+        try {
+            setIsDepositLoading(true);
+            await deposit(goalIndex, ethers.utils.parseUnits(amount, 18));
+            toast.success(`Deposited ${amount} toward ${goalData.what}!`);
+        } catch (error) {
+            console.log("deposit error:", error);
+            toast.error('Deposit error.');
+        } finally {
+            setIsDepositLoading(false);
+        }
+
+    }
+
+    const handleApprove = async () => {
+        // Get the amount to deposit
+        const amount = (document.getElementById(`deposit-amount-${goalIndex}`) as HTMLInputElement).value;
+
+        // Try to approve the goalz contract to spend the amount
+        try {
+            setIsApproveLoading(true);
+            await approve();
+            toast.success('Approved!');
+        } catch (error) {
+            console.log("approve error:", error);
+            
+        } finally {
+            setIsApproveLoading(false);
+        }
+
     }
 
     return (
         <>
-            <tr onClick={toggleExpansion}>
+            <tr onClick={toggleExpansion} key={`${goalIndex}`}>
                 <td>
                     <div className="progress">
                         <div className="progress-bar" role="progressbar" style={{ width: `${goalProgress}%` }}></div>
@@ -90,7 +128,7 @@ const GoalRow = ({ goalIndex }) => {
                 <td>{goalData.targetDate}</td>
             </tr>
             {isExpanded && (
-                <tr>
+                <tr key={`actions-${goalIndex}`}>
                     <td colSpan={1}></td>
                     <td colSpan={2}>
                         <div>
@@ -108,8 +146,16 @@ const GoalRow = ({ goalIndex }) => {
                             </div>
 
                             <div className="btn-group" role="group">
-                                <button className="btn btn-outline-primary" type="button" id={`deposit-button-${goalIndex}`}>Deposit</button>
-                                <button className="btn btn-outline-success" type="button" id={`approve-button-${goalIndex}`}>Approve</button>
+                                <button
+                                    className="btn btn-outline-primary"
+                                    type="button"
+                                    id={`deposit-button-${goalIndex}`}
+                                    onClick={handleDeposit}>Deposit</button>
+                                <button 
+                                    className="btn btn-outline-success" 
+                                    type="button" 
+                                    id={`approve-button-${goalIndex}`}
+                                    onClick={handleApprove}>Approve</button>
                             </div>
                         </div>
                         <br />
@@ -122,7 +168,7 @@ const GoalRow = ({ goalIndex }) => {
                                         type="number"
                                         className="form-control"
                                         id={`deposit-amount-${goalIndex}`}
-                                        value={depositAmount}
+                                        value={autoDepositAmount}
                                         onChange={(e) => setDepositAmount(e.target.value)}
                                         placeholder="0" />
                                     <br />
@@ -134,7 +180,7 @@ const GoalRow = ({ goalIndex }) => {
                                         type="number"
                                         className="form-control"
                                         id={`deposit-frequency-${goalIndex}`}
-                                        value={depositAmount}
+                                        value={autoDepositFrequency}
                                         onChange={(e) => setDepositAmount(e.target.value)}
                                         placeholder="0" />
                                     <span className="input-group-text">Days</span>

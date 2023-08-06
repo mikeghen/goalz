@@ -4,6 +4,8 @@ import { useAccount, useContractRead, useSigner } from "wagmi";
 import { GOALZ_USD_ADDRESS, GOALZ_ADDRESS, ERC20_ABI, GOALZ_ABI } from '../config/constants';
 import { formatTokenAmount } from '../utils/helpers';
 import GoalRow from './goalRow';
+import { use } from 'chai';
+import { setGoal } from '../utils/ethereum';
 
 const ViewGoals = () => {
 
@@ -11,6 +13,7 @@ const ViewGoals = () => {
     const { data: signer } = useSigner();
 
     const [goalzUsdBalance, getGoalzUsdBalance] = useState("0.00");
+    const [goalCount, setGoalCount] = useState(0);
     
     // ---
     // Get the balance of the user has available for deposits
@@ -38,6 +41,12 @@ const ViewGoals = () => {
         watch: true,
     });
 
+    useEffect(() => {
+        if(userGoalzCount.data) {
+            setGoalCount(userGoalzCount.data.toNumber());
+        }
+    }, [userGoalzCount.data]);
+
     return (
         <div className="container">
             <div className="row">
@@ -52,14 +61,14 @@ const ViewGoals = () => {
                                             <th>Progress</th>
                                             <th>What</th>
                                             <th>Why</th>
-                                            <th>Have</th>
-                                            <th>Want</th>
+                                            <th>Saved (USDC)</th>
+                                            <th>Target (USDC)</th>
                                             <th>Target Date</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {[...Array(userGoalzCount.data).keys()].reverse().map((goalIndex) => (
-                                            <GoalRow goalIndex={goalIndex} />
+                                        {[...Array(goalCount).keys()].reverse().map((goalIndex) => (
+                                            <GoalRow goalIndex={goalIndex} key={goalIndex} />
                                         ))}
                                     </tbody>
                                 </table>

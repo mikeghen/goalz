@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useAccount, useContractRead, useSigner } from "wagmi";
 import { GOALZ_USD_ADDRESS, ERC20_ABI } from '../config/constants';
 import { formatTokenAmount } from '../utils/helpers';
+import CreateGoals from './createGoals';
 
 const Wallet: React.FC<{}> = () => {
 
-  const {address} = useAccount();
+  const { address } = useAccount();
   const { data: signer } = useSigner();
 
+  const [showNewGoalRow, setShowNewGoalRow] = useState(false);
   const [goalzUsdBalance, getGoalzUsdBalance] = useState("0.00");
 
   const goalzUsdBalanceData = useContractRead({
@@ -24,28 +26,62 @@ const Wallet: React.FC<{}> = () => {
     }
   }, [goalzUsdBalanceData.data]);
 
+  // Function to handle adding a new goal row
+  const handleAddNewGoalRow = () => {
+    setShowNewGoalRow(true);
+  };
 
-      
   return (
-    <div>
-      <div className="card">
-        <div className="card-header">
-          Balances
+    <div className="container">
+      <div className="row">
+        <div className="col-md-6 mb-4 mb-md-0">
+          <h1 className="m-auto text-center md:mt-8  font-extrabold">
+            Welcome back to your <br />
+            <a href="https://github.com/iMuzz/web3-starter" target="_blank" rel="noreferrer" className="rotating-hue">
+              🏆 Goalz
+            </a>
+          </h1>
         </div>
-        <div className="card-body">
-          <div className="d-flex flex-wrap justify-content-between align-items-center">
-            <div className="d-flex flex-wrap align-items-center">
-              <div className="mr-3">
-                Goalz USD
-              </div>
-              <div className="mr-3">
-              <span>{goalzUsdBalance}</span>
-              </div>
+        <div className="col-md-6 mb-4 mb-md-0">
+          <div className="card">
+            <div className="card-header">
+              Account Summary
             </div>
-
+            <div className="card-body">
+              <table className="table">
+                <tbody>
+                  <tr>
+                    <td>Available:</td>
+                    <td>{goalzUsdBalance} USDC</td>
+                  </tr>
+                  <tr>
+                    <td>Deposited:</td>
+                    <td>{goalzUsdBalance} glzUSDC</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
+      <br/>
+      <style jsx>{`
+        .rotating-hue {
+          background-image: -webkit-linear-gradient(92deg, #f35626, #feab3a);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          -webkit-animation: hue 30s infinite linear;
+        }
+
+        @-webkit-keyframes hue {
+          from {
+            -webkit-filter: hue-rotate(0deg);
+          }
+          to {
+            -webkit-filter: hue-rotate(-360deg);
+          }
+        }
+      `}</style>
     </div>
   );
 };

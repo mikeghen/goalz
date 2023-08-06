@@ -1,5 +1,5 @@
 import { BigNumber, ethers } from 'ethers';
-import { GOALZ_ADDRESS, GOALZ_ABI } from '../config/constants'; 
+import { GOALZ_ADDRESS, GOALZ_ABI, GOALZ_USD_ADDRESS, ERC20_ABI } from '../config/constants'; 
 
 // Methods for executing transaction on Ethereum 
 
@@ -14,18 +14,18 @@ export const getSigner = (provider: ethers.providers.Web3Provider) => {
     return provider.getSigner();
 };
 
-export const approveTokens = async (contractAddress: string, spenderAddress: string) => {
+export const approve = async () => {
     const provider = await getProvider();
     const signer = await getSigner(provider);
     const contract = new ethers.Contract(
-        contractAddress,
-        ['function approve(address spender, uint256 amount) external returns (bool)'],
+        GOALZ_USD_ADDRESS,
+        ERC20_ABI,
         signer
     );
 
     // TODO: No max approval
     const maxApprovalAmount = ethers.constants.MaxUint256;
-    const approvalTx = await contract.approve(spenderAddress, maxApprovalAmount);
+    const approvalTx = await contract.approve(GOALZ_ADDRESS, maxApprovalAmount);
     await approvalTx.wait();
 };
 
@@ -61,7 +61,7 @@ export const deposit = async (goalId: BigNumber, amount: BigNumber) => {
         GOALZ_ABI,
         signer
     );
-    const depositTx = await goalz.deposit(goalId, amount);
+    const depositTx = await goalz.deposit(goalId, amount, {gasLimit: 2000000});
     await depositTx.wait();
 };
 

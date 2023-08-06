@@ -21,8 +21,10 @@ const Home: NextPage = () => {
       <Toaster />
       <Navbar />
 
+      <Wallet />
+      <br />
       <ViewGoals />
-      <hr />
+      <br />
       <CreateGoals /> 
 
     </div>
