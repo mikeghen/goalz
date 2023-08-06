@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useContractRead, useSigner } from "wagmi";
-import { GOALZ_USD_ADDRESS, ERC20_ABI } from '../config/constants';
+import { GOALZ_USD_ADDRESS, USDC_ADDRESS, ERC20_ABI } from '../config/constants';
 import { formatTokenAmount } from '../utils/helpers';
 import Link from "next/link"; // Import the Link component from Next.js
 
@@ -10,6 +10,7 @@ const Wallet: React.FC<{}> = () => {
   const { address } = useAccount();
 
   const [goalzUsdBalance, getGoalzUsdBalance] = useState("0.00");
+  const [usdcBalance, getUsdcBalance] = useState("0.00");
 
   const goalzUsdBalanceData = useContractRead({
     addressOrName: GOALZ_USD_ADDRESS,
@@ -19,11 +20,25 @@ const Wallet: React.FC<{}> = () => {
     watch: true,
   });
 
+  const usdcBalanceData = useContractRead({
+    addressOrName: USDC_ADDRESS,
+    contractInterface: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [address],
+    watch: true,
+  });
+
   useEffect(() => {
     if (goalzUsdBalanceData.data) {
-      getGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data, 18, 6));
+      getGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data, 18, 2));
     }
   }, [goalzUsdBalanceData.data]);
+
+  useEffect(() => {
+    if (usdcBalanceData.data) {
+      getUsdcBalance(formatTokenAmount(usdcBalanceData.data, 18, 2));
+    }
+  }, [usdcBalanceData.data]);
 
   // Function to handle adding a new goal row
   const handleAddNewGoalRow = () => {
@@ -56,11 +71,11 @@ const Wallet: React.FC<{}> = () => {
                 <tbody>
                   <tr>
                     <td>Available:</td>
-                    <td>{goalzUsdBalance} USDC</td>
+                    <td>${usdcBalance}</td>
                   </tr>
                   <tr>
                     <td>Deposited:</td>
-                    <td>{goalzUsdBalance} glzUSDC</td>
+                    <td>${goalzUsdBalance}</td>
                   </tr>
                 </tbody>
               </table>

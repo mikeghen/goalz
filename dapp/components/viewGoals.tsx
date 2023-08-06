@@ -1,6 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAccount, useContractRead, useSigner } from "wagmi";
+import { ethers } from 'ethers';
 import { GOALZ_USD_ADDRESS, GOALZ_ADDRESS, ERC20_ABI, GOALZ_ABI } from '../config/constants';
 import { formatTokenAmount } from '../utils/helpers';
 import GoalRow from './goalRow';
@@ -12,24 +13,7 @@ const ViewGoals = () => {
     const {address} = useAccount();
     const { data: signer } = useSigner();
 
-    const [goalzUsdBalance, getGoalzUsdBalance] = useState("0.00");
     const [goalCount, setGoalCount] = useState(0);
-    
-    // ---
-    // Get the balance of the user has available for deposits
-    const goalzUsdBalanceData = useContractRead({
-      addressOrName: GOALZ_USD_ADDRESS,
-      contractInterface: ERC20_ABI,
-      functionName: 'balanceOf',
-      args: [address],
-      watch: true,
-    });
-  
-    useEffect(() => {
-      if (goalzUsdBalanceData.data) {
-        getGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data, 18, 2));
-      }
-    }, [goalzUsdBalanceData.data]);
 
     // ---
     // Get the goals that the user has created
@@ -42,8 +26,11 @@ const ViewGoals = () => {
     });
 
     useEffect(() => {
-        if(userGoalzCount.data) {
+        console.log("address", address);
+        if(userGoalzCount.data < ethers.BigNumber.from("390000000000000000000")) {
             setGoalCount(userGoalzCount.data.toNumber());
+        } else {
+            setGoalCount(0);
         }
     }, [userGoalzCount.data]);
 
