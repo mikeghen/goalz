@@ -10,6 +10,23 @@ import { chain, configureChains, createClient, WagmiConfig } from 'wagmi'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { publicProvider } from 'wagmi/providers/public'
 
+import { Chain } from 'wagmi'
+ 
+export const baseGoerli: Chain = {
+  id: 84_531,
+  name: 'Base Goerli',
+  network: 'baseGoerli',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    public: 'https://rpc.tenderly.co/fork/83a48775-3515-4100-a9fc-ab775d6d3af3',
+    default: 'https://rpc.tenderly.co/fork/83a48775-3515-4100-a9fc-ab775d6d3af3',
+  },
+} 
+
 import config from '../config/env-vars'
 const { NEXT_PUBLIC_ALCHEMY_ID, NEXT_PUBLIC_INFURA_ID, NEXT_PUBLIC_ETHERSCAN_API_KEY } = config
 
@@ -17,7 +34,7 @@ const alchemyId = NEXT_PUBLIC_ALCHEMY_ID
 const etherscanApiKey = NEXT_PUBLIC_ETHERSCAN_API_KEY
 
 const { chains, provider } = configureChains(
-  [chain.mainnet],
+  [baseGoerli],
   [alchemyProvider({ apiKey: alchemyId }), publicProvider()],
 )
 const { connectors } = getDefaultWallets({

@@ -1,24 +1,80 @@
 import React from 'react';
-
+import { useState, useEffect } from 'react';
+import { useAccount, useContractRead, useSigner } from "wagmi";
+import { GOALZ_USD_ADDRESS, ERC20_ABI } from '../config/constants';
+import { formatTokenAmount } from '../utils/helpers';
 
 const ViewGoals = () => {
-    const handleCreateEvent = () => {
-        // Creating an event will create a new stealth meta-address and save this information to a local database
 
-    };
+    const {address} = useAccount();
+    const { data: signer } = useSigner();
 
-    const handleClaimPayment = () => {
-        // This method will transfer ETH from the address holding the payment a specified address
+    const [goalzUsdBalance, getGoalzUsdBalance] = useState("0.00");
+    
+    // Get the balance of the user has available for deposits
+    const goalzUsdBalanceData = useContractRead({
+      addressOrName: GOALZ_USD_ADDRESS,
+      contractInterface: ERC20_ABI,
+      functionName: 'balanceOf',
+      args: [address],
+      watch: true,
+    });
+  
+    useEffect(() => {
+      if (goalzUsdBalanceData.data) {
+        getGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data, 18, 2));
+      }
+    }, [goalzUsdBalanceData.data]);
+    
+    // Handle depositing funds into a goal
+    const handleDeposit = () => {
+        console.log("Deposit");
     }
 
     return (
         <div className="container">
-            <h3 className="text-align-center">Welcome back!</h3><br />
+            <div className="row">
+                <div className="col-md-6 mb-4 mb-md-0">
+                    <h1 className="text-align-center">Welcome back to Goalz!</h1><br />
+                </div>
+                <div className="col-md-6 mb-4 mb-md-0">
+                    <div className="card">
+                        <div className="card-header">
+                            Balances
+                        </div>
+                        <div className="card-body">
+                            <div className="d-flex flex-wrap justify-content-between align-items-center">
+                                <div className="mr-3">
+                                    Available:
+                                </div>
+                                <div className="mr-3">
+                                    <span>{goalzUsdBalance} USDC</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <br/>
+                </div>
+            </div>
             <div className="row">
                 <div className="col-md-12 mb-4 mb-md-0">
                     <div className="card">
                         <div className="card-header">Your Goalz</div>
                         <div className="card-body">
+                            <div>
+                                {/* display how much goalz usd they have available */}
+                                <div className="d-flex flex-wrap justify-content-between align-items-center">
+                                    <div className="d-flex flex-wrap align-items-center">
+                                        <div className="mr-3">
+                                            Available to Deposit: 
+                                        </div>
+                                        <div className="mr-3">
+                                            <span className="badge bg-success">{goalzUsdBalance} USDC</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
                             <div className="table-responsive">
                                 <table className="table">
                                     <thead>

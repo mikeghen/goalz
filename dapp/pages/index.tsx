@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast'
 import Navbar from '../components/navbar'
 import ViewGoals from '../components/viewGoals'
 import CreateGoals from '../components/createGoals'
+import Wallet from '../components/wallet'
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
