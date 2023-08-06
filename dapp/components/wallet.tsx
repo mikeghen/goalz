@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAccount, useContractRead, useSigner } from "wagmi";
 import { GOALZ_USD_ADDRESS, ERC20_ABI } from '../config/constants';
 import { formatTokenAmount } from '../utils/helpers';
-import CreateGoals from './createGoals';
+import Link from "next/link"; // Import the Link component from Next.js
+
 
 const Wallet: React.FC<{}> = () => {
 
   const { address } = useAccount();
-  const { data: signer } = useSigner();
 
-  const [showNewGoalRow, setShowNewGoalRow] = useState(false);
   const [goalzUsdBalance, getGoalzUsdBalance] = useState("0.00");
 
   const goalzUsdBalanceData = useContractRead({
@@ -28,7 +27,7 @@ const Wallet: React.FC<{}> = () => {
 
   // Function to handle adding a new goal row
   const handleAddNewGoalRow = () => {
-    setShowNewGoalRow(true);
+
   };
 
   return (
@@ -41,6 +40,11 @@ const Wallet: React.FC<{}> = () => {
               🏆 Goalz
             </a>
           </h1>
+          <div className="d-flex justify-content-center mt-3">
+            <Link href="/create">
+              <a className="btn btn-primary">Add New Goal</a>
+            </Link>
+          </div>
         </div>
         <div className="col-md-6 mb-4 mb-md-0">
           <div className="card">

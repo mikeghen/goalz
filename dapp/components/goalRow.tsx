@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useContractRead } from "wagmi";
 import { GOALZ_ADDRESS, GOALZ_ABI } from "../config/constants";
-import { approve, deposit } from "../utils/ethereum";
+import { approve, deposit, automateDeposit } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -25,6 +25,7 @@ const GoalRow = ({ goalIndex }) => {
     const [goalProgress, setGoalProgress] = useState(0);
     const [isDepositLoading, setIsDepositLoading] = useState(false);
     const [isApproveLoading, setIsApproveLoading] = useState(false);
+    const [isAutomateDepositLoading, setIsAutomateDepositLoading] = useState(false);
     const [goalData, setGoalData] = useState<GoalData>({
         what: "",
         why: "",
@@ -110,7 +111,25 @@ const GoalRow = ({ goalIndex }) => {
         } finally {
             setIsApproveLoading(false);
         }
+    }
 
+    // ---
+    // Handler for automateDeposit
+    const handleAutomateDeposit = async () => {
+        // Get the amount and frequency
+        const frequencySeconds = ethers.BigNumber.from(autoDepositFrequency).mul(ethers.BigNumber.from(24).mul(60).mul(60));
+
+        // Try to automate the deposit
+        try {
+            setIsAutomateDepositLoading(true);
+            await automateDeposit(goalIndex, ethers.utils.parseUnits(autoDepositAmount, 18), frequencySeconds);
+            toast.success(`Automated deposit of ${autoDepositAmount} every ${autoDepositFrequency} days.`);
+        } catch (error) {
+            console.log("automateDeposit error:", error);
+            toast.error('Error automating deposit.');
+        } finally { 
+            setIsAutomateDepositLoading(false);
+        }
     }
 
     return (
@@ -167,9 +186,9 @@ const GoalRow = ({ goalIndex }) => {
                                     <input
                                         type="number"
                                         className="form-control"
-                                        id={`deposit-amount-${goalIndex}`}
+                                        id={`auto-deposit-amount-${goalIndex}`}
                                         value={autoDepositAmount}
-                                        onChange={(e) => setDepositAmount(e.target.value)}
+                                        onChange={(e) => setAutoDepositAmount(e.target.value)}
                                         placeholder="0" />
                                     <br />
                                     <span className="input-group-text">USDC</span>
@@ -181,12 +200,16 @@ const GoalRow = ({ goalIndex }) => {
                                         className="form-control"
                                         id={`deposit-frequency-${goalIndex}`}
                                         value={autoDepositFrequency}
-                                        onChange={(e) => setDepositAmount(e.target.value)}
+                                        onChange={(e) =>  setAutoDepositFrequency(e.target.value)}
                                         placeholder="0" />
                                     <span className="input-group-text">Days</span>
                                 </div>
                                 <div className="input-group mb-3">
-                                    <button className="btn btn-outline-secondary" type="button" id="button-addon2">Automate</button>
+                                    <button 
+                                        className="btn btn-outline-secondary" 
+                                        type="button" 
+                                        id="button-addon2"
+                                        onClick={handleAutomateDeposit}>Automate</button>
                                 </div>
                             </div>
                         </div>

@@ -5,6 +5,8 @@ import Navbar from '../components/navbar'
 import CreateGoals from '../components/createGoals'
 
 import 'bootstrap/dist/css/bootstrap.min.css';
+import Wallet from '../components/wallet'
+
 
 const Create: NextPage = () => {
     return (
@@ -16,7 +18,9 @@ const Create: NextPage = () => {
         </Head>
         <Toaster />
         <Navbar />
-  
+
+        <Wallet />
+        <br />
         <CreateGoals />
   
       </div>

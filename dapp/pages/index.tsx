@@ -24,8 +24,6 @@ const Home: NextPage = () => {
       <Wallet />
       <br />
       <ViewGoals />
-      <br />
-      <CreateGoals /> 
 
     </div>
   )
