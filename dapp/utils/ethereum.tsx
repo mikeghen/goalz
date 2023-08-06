@@ -1,5 +1,5 @@
 import { BigNumber, ethers } from 'ethers';
-import { GOALZ_ADDRESS, GOALZ_ABI, GOALZ_USD_ADDRESS, ERC20_ABI } from '../config/constants'; 
+import { GOALZ_ADDRESS, GOALZ_ABI, GOALZ_USD_ADDRESS, USDC_ADDRESS, ERC20_ABI } from '../config/constants'; 
 
 // Methods for executing transaction on Ethereum 
 
@@ -18,7 +18,7 @@ export const approve = async () => {
     const provider = await getProvider();
     const signer = await getSigner(provider);
     const contract = new ethers.Contract(
-        GOALZ_USD_ADDRESS,
+        USDC_ADDRESS,
         ERC20_ABI,
         signer
     );
@@ -100,5 +100,41 @@ export const cancelAutomateDeposit = async (goalId: BigNumber) => {
     const cancelAutomateDepositTx = await goalz.cancelAutomateDeposit(goalId);
     await cancelAutomateDepositTx.wait();
 };
+
+export const getGoalData = async (goalId: BigNumber) => {
+    const provider = await getProvider();
+    const signer = await getSigner(provider);
+    const goalz = new ethers.Contract(
+        GOALZ_ADDRESS,
+        GOALZ_ABI,
+        signer
+    );
+    const goalData = await goalz.savingsGoals(goalId);
+    return goalData;
+}
+
+export const getEvents = async () => {
+    const provider = await getProvider();
+    const contract = new ethers.Contract(GOALZ_ADDRESS, GOALZ_ABI, provider);
+    const eventName = 'DepositMade'; 
+    let startBlock = await provider.getBlockNumber() - 100; //43200 * days; 
+    const endBlock = await provider.getBlockNumber();
+    const filter = contract.filters[eventName](); // Create a filter for the event
+    const steps = parseInt(((endBlock - startBlock) / 1000).toString());
+    const lastStepSize = (endBlock - startBlock) % 1000;
+    let events: any[] = [];
+    for (let i = 0; i < steps; i++) {
+        console.log('step')
+        const stepStartBlock = startBlock + i * 1000;
+        const stepEndBlock = stepStartBlock + 1000;
+        let eventSet = await contract.queryFilter(filter, stepStartBlock, stepEndBlock);
+        events = events.concat(eventSet);
+    }
+    startBlock = endBlock - lastStepSize;
+    let eventSet = await contract.queryFilter(filter, startBlock, endBlock);
+    events = events.concat(eventSet);
+    return events;
+}
+
 
 

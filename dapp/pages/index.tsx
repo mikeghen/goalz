@@ -9,6 +9,7 @@ import CreateGoals from '../components/createGoals'
 import Wallet from '../components/wallet'
 
 import 'bootstrap/dist/css/bootstrap.min.css';
+import DepositHistory from '../components/depositHistory'
 
 const Home: NextPage = () => {
   return (
@@ -24,6 +25,8 @@ const Home: NextPage = () => {
       <Wallet />
       <br />
       <ViewGoals />
+      <br />
+      <DepositHistory />
 
     </div>
   )
