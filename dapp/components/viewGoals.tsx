@@ -49,7 +49,7 @@ const ViewGoals = () => {
                                             <th>Progress</th>
                                             <th></th>
                                             <th>Target Date</th>
-                                            <th>Next Auto-Deposit</th>
+                                            <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>

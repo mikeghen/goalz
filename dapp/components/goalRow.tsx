@@ -177,7 +177,7 @@ const GoalRow = ({ goalIndex }) => {
                         <div className="progress-bar" role="progressbar" style={{ width: `${goalProgress}%` }}></div>
                     </div>
                 </td>
-                <td>${goalData.targetAmount} / ${goalData.currentAmount}</td>
+                <td>{goalData.targetAmount} / {goalData.currentAmount} USDC</td>
                 <td>{goalData.targetDate}</td>
 
                 {/* if theres an automatedDepositAmount > 0 then display this otherwise display a link to automateDeposit */}
@@ -187,7 +187,7 @@ const GoalRow = ({ goalIndex }) => {
                     </Link>
                     &nbsp; &nbsp;
                     {goalData.automatedDepositAmount > 0 ? (
-                        <>🤖 ${goalData.automatedDepositAmount} on {goalData.automatedDepositDate}</>
+                        <>🤖 {goalData.automatedDepositAmount} USDC on {goalData.automatedDepositDate}</>
                     ) : (
                         <Link href="">
                             {/* a small button to automate it */}
@@ -252,6 +252,7 @@ const GoalRow = ({ goalIndex }) => {
                                 <label className="form-label" htmlFor="{`deposit-frequency-${goalIndex}`}">Frequency</label>
                                 <div className="input-group mb-3">
                                     <input
+                                        width={100}
                                         type="number"
                                         className="form-control"
                                         id={`deposit-frequency-${goalIndex}`}

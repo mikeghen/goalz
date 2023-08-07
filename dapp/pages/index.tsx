@@ -26,7 +26,6 @@ const Home: NextPage = () => {
       <br />
       <ViewGoals />
       <br />
-      <DepositHistory />
 
     </div>
   )

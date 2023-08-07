@@ -75,11 +75,11 @@ const Wallet: React.FC<{}> = () => {
                 <tbody>
                   <tr>
                     <td>Available:</td>
-                    <td>${usdcBalance}</td>
+                    <td>{usdcBalance} USDC</td>
                   </tr>
                   <tr>
                     <td>Deposited:</td>
-                    <td>${goalzUsdBalance}</td>
+                    <td>{goalzUsdBalance} USDC</td>
                   </tr>
                 </tbody>
               </table>
