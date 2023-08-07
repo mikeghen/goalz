@@ -38,7 +38,7 @@ export const setGoal = async (what: string, why: string, targetAmount: BigNumber
         signer
     );
     const goalTx = await goalz.setGoal(what, why, targetAmount, targetDate);
-    await goalTx.wait();
+    return await goalTx.wait();
 };
 
 export const deleteGoal = async (goalId: BigNumber) => {

@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useContractRead } from "wagmi";
 import { GOALZ_ADDRESS, GOALZ_ABI } from "../config/constants";
-import { approve, deposit, automateDeposit } from "../utils/ethereum";
+import { approve, deposit, automateDeposit, setGoal } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { use } from "chai";
 
 interface GoalData {
     what: string;
@@ -13,6 +14,8 @@ interface GoalData {
     currentAmount: string;
     targetAmount: string;
     targetDate: string;
+    automatedDepositAmount: "",
+    automatedDepositDate: "",
 };
 
 const GoalRow = ({ goalIndex }) => {
@@ -32,6 +35,8 @@ const GoalRow = ({ goalIndex }) => {
         currentAmount: "",
         targetAmount: "",
         targetDate: "",
+        automatedDepositAmount: "",
+        automatedDepositDate: "",
     });
 
     // Get Goal Data
@@ -40,7 +45,13 @@ const GoalRow = ({ goalIndex }) => {
         contractInterface: GOALZ_ABI,
         functionName: "savingsGoals",
         args: [goalIndex],
-        watch: true,
+    });
+
+    const automatedDeposit = useContractRead({
+        addressOrName: GOALZ_ADDRESS,
+        contractInterface: GOALZ_ABI,
+        functionName: "automatedDeposits",
+        args: [goalIndex],
     });
 
     // ---
@@ -49,17 +60,37 @@ const GoalRow = ({ goalIndex }) => {
         if (goal.data) {
             const targetDate = new Date(goal.data.targetDate.mul(1000).toNumber());
             const goalProgress = goal.data.currentAmount.mul(100).div(goal.data.targetAmount).toNumber();
-            console.log("goalProgress", goalProgress);
             setGoalProgress(goalProgress);
-            setGoalData({
+
+            // Update the goal data state to add the goal data 
+            setGoalData((prevGoalData) => ({
+                ...prevGoalData,
                 what: goal.data[0],
                 why: goal.data[1],
                 currentAmount: formatTokenAmount(goal.data[2], 18, 0),
                 targetAmount: formatTokenAmount(goal.data[3], 18, 0),
                 targetDate: formatDate(targetDate)
-            });
+            }));
         }
     }, [goal.data]);
+
+    useEffect(() => {
+        if (automatedDeposit.data && !automatedDeposit.error) {
+            if(automatedDeposit.data.amount.gt(0)) {
+                console.log("automatedDeposit.data", automatedDeposit.data);
+                const nextDepositTimestamp = automatedDeposit.data.lastDeposit.add(automatedDeposit.data.frequency).mul(1000);
+                const automatedDepositDate = new Date(nextDepositTimestamp.toNumber());
+
+                // Update the goal data state to add the goal data 
+                setGoalData((prevGoalData) => ({
+                    ...prevGoalData,
+                    automatedDepositAmount: formatTokenAmount(automatedDeposit.data.amount, 18, 0),
+                    automatedDepositDate: formatDate(automatedDepositDate),
+                }));
+            }
+        }
+    }, [automatedDeposit.data]);
+
 
     // ---
     // Format a date
@@ -145,6 +176,17 @@ const GoalRow = ({ goalIndex }) => {
                 <td>{goalData.targetAmount}</td>
                 <td>{goalData.currentAmount}</td>
                 <td>{goalData.targetDate}</td>
+                {/* if theres an automatedDepositAmount > 0 then display this otherwise display a link to automateDeposit */}
+                {goalData.automatedDepositAmount > 0 ? (
+                    <td>${goalData.automatedDepositAmount} on {goalData.automatedDepositDate}</td>
+                ) : (
+                    <td>
+                        <Link href={`/automateDeposit/${goalIndex}`}>
+                            {/* a small button to automate it */}
+                            <button className="btn btn-outline-primary btn-sm" type="button">Automate</button>
+                        </Link>
+                    </td>
+                )}
             </tr>
             {isExpanded && (
                 <tr key={`actions-${goalIndex}`}>

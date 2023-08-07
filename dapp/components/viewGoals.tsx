@@ -26,8 +26,8 @@ const ViewGoals = () => {
     });
 
     useEffect(() => {
-        console.log("address", address);
-        if(userGoalzCount.data < ethers.BigNumber.from("390000000000000000000")) {
+        if(ethers.BigNumber.from(userGoalzCount.data).lt(ethers.BigNumber.from("390000000000000000000"))) {
+            console.log("userGoalzCount.data", userGoalzCount.data.toNumber());
             setGoalCount(userGoalzCount.data.toNumber());
         } else {
             setGoalCount(0);
@@ -51,6 +51,7 @@ const ViewGoals = () => {
                                             <th>Saved (USDC)</th>
                                             <th>Target (USDC)</th>
                                             <th>Target Date</th>
+                                            <th>Next Auto-Deposit</th>
                                         </tr>
                                     </thead>
                                     <tbody>

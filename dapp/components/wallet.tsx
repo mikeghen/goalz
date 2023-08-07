@@ -59,6 +59,10 @@ const Wallet: React.FC<{}> = () => {
             <Link href="/create">
               <a className="btn btn-primary">Add New Goal</a>
             </Link>
+            &nbsp;&nbsp;
+            <Link href="/">
+              <a className="btn btn-primary">View Goalz</a>
+            </Link>
           </div>
         </div>
         <div className="col-md-6 mb-4 mb-md-0">
