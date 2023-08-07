@@ -21,7 +21,8 @@ interface GoalData {
 const GoalRow = ({ goalIndex }) => {
 
     const { address } = useAccount();
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpandedDeposit, setIsExpandedDeposit] = useState(false);
+    const [isExpandedAutomate, setIsExpandedAutomate] = useState(false);
     const [depositAmount, setDepositAmount] = useState("");
     const [autoDepositAmount, setAutoDepositAmount] = useState("");
     const [autoDepositFrequency, setAutoDepositFrequency] = useState("");
@@ -76,7 +77,7 @@ const GoalRow = ({ goalIndex }) => {
 
     useEffect(() => {
         if (automatedDeposit.data && !automatedDeposit.error) {
-            if(automatedDeposit.data.amount.gt(0)) {
+            if (automatedDeposit.data.amount.gt(0)) {
                 console.log("automatedDeposit.data", automatedDeposit.data);
                 const nextDepositTimestamp = automatedDeposit.data.lastDeposit.add(automatedDeposit.data.frequency).mul(1000);
                 const automatedDepositDate = new Date(nextDepositTimestamp.toNumber());
@@ -103,8 +104,12 @@ const GoalRow = ({ goalIndex }) => {
     };
 
     // Function to toggle the expansion of the row
-    const toggleExpansion = () => {
-        setIsExpanded(!isExpanded);
+    const toggleExpansionDeposit = () => {
+        setIsExpandedDeposit(!isExpandedDeposit);
+    };
+
+    const toggleExpansionAutomate = () => {
+        setIsExpandedAutomate(!isExpandedAutomate);
     };
 
     // ---
@@ -138,7 +143,7 @@ const GoalRow = ({ goalIndex }) => {
             toast.success('Approved!');
         } catch (error) {
             console.log("approve error:", error);
-            
+
         } finally {
             setIsApproveLoading(false);
         }
@@ -158,40 +163,43 @@ const GoalRow = ({ goalIndex }) => {
         } catch (error) {
             console.log("automateDeposit error:", error);
             toast.error('Error automating deposit.');
-        } finally { 
+        } finally {
             setIsAutomateDepositLoading(false);
         }
     }
 
     return (
         <>
-            <tr onClick={toggleExpansion} key={`${goalIndex}`}>
+            <tr key={`${goalIndex}`}>
+                <td>{goalData.what}</td>
                 <td>
                     <div className="progress">
                         <div className="progress-bar" role="progressbar" style={{ width: `${goalProgress}%` }}></div>
                     </div>
                 </td>
-                <td>{goalData.what}</td>
-                <td>{goalData.why}</td>
-                <td>{goalData.targetAmount}</td>
-                <td>{goalData.currentAmount}</td>
+                <td>${goalData.targetAmount} / ${goalData.currentAmount}</td>
                 <td>{goalData.targetDate}</td>
+
                 {/* if theres an automatedDepositAmount > 0 then display this otherwise display a link to automateDeposit */}
-                {goalData.automatedDepositAmount > 0 ? (
-                    <td>${goalData.automatedDepositAmount} on {goalData.automatedDepositDate}</td>
-                ) : (
-                    <td>
-                        <Link href={`/automateDeposit/${goalIndex}`}>
+                <td>
+                    <Link href="">
+                        <button className="btn btn-outline-primary btn-sm" onClick={toggleExpansionDeposit} type="button">Deposit</button>
+                    </Link>
+                    &nbsp; &nbsp;
+                    {goalData.automatedDepositAmount > 0 ? (
+                        <>🤖 ${goalData.automatedDepositAmount} on {goalData.automatedDepositDate}</>
+                    ) : (
+                        <Link href="">
                             {/* a small button to automate it */}
-                            <button className="btn btn-outline-primary btn-sm" type="button">Automate</button>
+                            <button className="btn btn-outline-primary btn-sm" onClick={toggleExpansionAutomate} type="button">Automate</button>
                         </Link>
-                    </td>
-                )}
+                    )}
+                </td>
             </tr>
-            {isExpanded && (
+            {isExpandedDeposit && (
                 <tr key={`actions-${goalIndex}`}>
-                    <td colSpan={1}></td>
-                    <td colSpan={2}>
+                    <td colSpan={4}></td>
+                    <td colSpan={1}>
                         <div>
                             <strong>One-time Deposit</strong>
                             <div className="input-group mb-3">
@@ -203,22 +211,28 @@ const GoalRow = ({ goalIndex }) => {
                                     onChange={(e) => setDepositAmount(e.target.value)}
                                     placeholder="0" />
                                 <span className="input-group-text">USDC</span>
-
                             </div>
-
                             <div className="btn-group" role="group">
                                 <button
                                     className="btn btn-outline-primary"
                                     type="button"
                                     id={`deposit-button-${goalIndex}`}
                                     onClick={handleDeposit}>Deposit</button>
-                                <button 
-                                    className="btn btn-outline-success" 
-                                    type="button" 
+                                <button
+                                    className="btn btn-outline-success"
+                                    type="button"
                                     id={`approve-button-${goalIndex}`}
                                     onClick={handleApprove}>Approve</button>
                             </div>
                         </div>
+                    </td>
+                </tr>
+            )}
+
+            {isExpandedAutomate && (
+                <tr>
+                    <td colSpan={4}></td>
+                    <td colSpan={1}>
                         <br />
                         <div>
                             <strong>Automate Deposit</strong>
@@ -242,14 +256,14 @@ const GoalRow = ({ goalIndex }) => {
                                         className="form-control"
                                         id={`deposit-frequency-${goalIndex}`}
                                         value={autoDepositFrequency}
-                                        onChange={(e) =>  setAutoDepositFrequency(e.target.value)}
+                                        onChange={(e) => setAutoDepositFrequency(e.target.value)}
                                         placeholder="0" />
                                     <span className="input-group-text">Days</span>
                                 </div>
                                 <div className="input-group mb-3">
-                                    <button 
-                                        className="btn btn-outline-secondary" 
-                                        type="button" 
+                                    <button
+                                        className="btn btn-outline-secondary"
+                                        type="button"
                                         id="button-addon2"
                                         onClick={handleAutomateDeposit}>Automate</button>
                                 </div>

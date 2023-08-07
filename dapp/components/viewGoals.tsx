@@ -45,11 +45,9 @@ const ViewGoals = () => {
                                 <table className="table">
                                     <thead>
                                         <tr>
-                                            <th>Progress</th>
                                             <th>What</th>
-                                            <th>Why</th>
-                                            <th>Saved (USDC)</th>
-                                            <th>Target (USDC)</th>
+                                            <th>Progress</th>
+                                            <th></th>
                                             <th>Target Date</th>
                                             <th>Next Auto-Deposit</th>
                                         </tr>
