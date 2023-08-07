@@ -58,7 +58,12 @@ contract Goalz is ERC721, ERC721Enumerable {
         return super.supportsInterface(interfaceId);
     }
 
-    function setGoal(string memory what, string memory why, uint targetAmount, uint targetDate) external {
+    function setGoal(
+        string memory what, 
+        string memory why, 
+        uint targetAmount, 
+        uint targetDate
+    ) external {
         require(targetAmount > 0, "Target amount should be greater than 0");
         require(targetDate > block.timestamp, "Target date should be in the future");
 
@@ -108,7 +113,6 @@ contract Goalz is ERC721, ERC721Enumerable {
         require(frequency > 0, "Automated deposit frequency should be greater than 0");
         require(automatedDeposits[goalId].amount == 0, "Automated deposit already exists for this goal");
         
-        depositToken.transferFrom(msg.sender, address(this), amount);
         automatedDeposits[goalId] = AutomatedDeposit(amount, frequency, block.timestamp);
 
         emit AutomatedDepositCreated(msg.sender, goalId, amount, frequency);
