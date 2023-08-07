@@ -84,8 +84,8 @@ const CreateGoals = () => {
         <div className="container">
             <div className="row">
                 <div className="col-md-6 mb-4 mb-md-0">
-                    <div className="card">
-                        <div className="card-header">Your Goal</div>
+                    <div className="card border-dark">
+                        <div className="card-header bg-secondary text-white">Your Goal</div>
                         <div className="card-body">
                             <div className="form-group">
                                 <label htmlFor="eventIdInput">What's the goal?</label>
@@ -106,8 +106,8 @@ const CreateGoals = () => {
                     </div>
                 </div>
                 <div className="col-md-6 mb-4 mb-md-0">
-                    <div className="card">
-                        <div className="card-header">Your Plan</div>
+                    <div className="card border-dark">
+                        <div className="card-header bg-secondary text-white">Your Plan</div>
                         <div className="card-body">
                             <div className="form-group">
                                 <label htmlFor="targetDate" className="form-label">

@@ -26,7 +26,7 @@ const ViewGoals = () => {
     });
 
     useEffect(() => {
-        if(ethers.BigNumber.from(userGoalzCount.data).lt(ethers.BigNumber.from("390000000000000000000"))) {
+        if(userGoalzCount.data) {
             console.log("userGoalzCount.data", userGoalzCount.data.toNumber());
             setGoalCount(userGoalzCount.data.toNumber());
         } else {
@@ -38,8 +38,8 @@ const ViewGoals = () => {
         <div className="container">
             <div className="row">
                 <div className="col-md-12 mb-4 mb-md-0">
-                    <div className="card">
-                        <div className="card-header">Your Goalz</div>
+                    <div className="card border-dark">
+                        <div className="card-header bg-secondary text-white">Your Goalz</div>
                         <div className="card-body">
                             <div className="table-responsive">
                                 <table className="table">

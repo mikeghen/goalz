@@ -66,8 +66,8 @@ const Wallet: React.FC<{}> = () => {
           </div>
         </div>
         <div className="col-md-6 mb-4 mb-md-0">
-          <div className="card">
-            <div className="card-header">
+          <div className="card border-success">
+            <div className="card-header bg-success text-white">
               Account Summary
             </div>
             <div className="card-body">
