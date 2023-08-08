@@ -25,17 +25,20 @@ describe("SavingsGoal", function () {
   let user1;
   let automatoor;
 
-  const targetAmount = ethers.parseEther("10");
+  const targetAmount = "10000000"; //ethers.parseEther("10");
   const targetDate = Math.floor(Date.now() / 1000) + 86400; // 1 day from now
-  const depositAmount = ethers.parseEther("5");
-  const automatedDepositAmount = ethers.parseEther("5");
+  const depositAmount = "5000000"; //ethers.parseEther("5");
+  const automatedDepositAmount = "5000000"; //ethers.parseEther("5");
   const automatedDepositFrequency = 3600; // 1 hour
 
   // Function that loads the savingsGoal fixture, used in each test
   const loadSavingsGoalFixture = async function () {
     SavingsGoal = await ethers.getContractFactory("Goalz");
     const _savingsGoal = await SavingsGoal.deploy(await usdc.getAddress());
-    return _savingsGoal;
+    // Get the Goalz token contract
+    const goalzTokenAddress = await _savingsGoal.goalzToken();
+    const _goalzToken = await ethers.getContractAt("GoalzUSD", goalzTokenAddress);
+    return [_savingsGoal, _goalzToken];
   }
 
   before(async function () {
@@ -71,28 +74,40 @@ describe("SavingsGoal", function () {
       params: [AUTOMATOOR_ADDRESS],
     });
     automatoor = await ethers.provider.getSigner(AUTOMATOOR_ADDRESS);
+    
+    // Get and log the balance of the USDC whale
+    const usdcWhaleBalance = await usdc.balanceOf(usdcWhale.address);
+    console.log("USDC whale balance:", usdcWhaleBalance.toString());
+
 
     // Transfer user1 some USDC
-    await usdc.connect(usdcWhale).transfer(user1.address, ethers.parseEther("1000"));
+    console.log("Transferring USDC to user1");
+    await usdc.connect(usdcWhale).transfer(user1.address, "1000000000");
 
     // Send deployer, user1, automator some ETH from the ETH whale
     await ethWhale.sendTransaction({
       to: deployer.address,
-      value: ethers.utils.parseEther("1"),
+      value: ethers.parseEther("1"),
     });
     await ethWhale.sendTransaction({
       to: user1.address,
-      value: ethers.utils.parseEther("1"),
+      value: ethers.parseEther("1"),
     });
     await ethWhale.sendTransaction({
       to: automatoor.address,
-      value: ethers.utils.parseEther("1"),
+      value: ethers.parseEther("1"),
+    });
+  });
+
+  describe("deploy", function () {
+    it("should work", async function () {
+      [savingsGoal, goalzToken] = await loadSavingsGoalFixture();
     });
   });
 
   describe("set a goal and make a deposit until the goal is complete, then withdraw", function () {
     it("should work", async function () {
-      savingsGoal = await loadSavingsGoalFixture();
+      [savingsGoal, goalzToken] = await loadSavingsGoalFixture();
       
       // Create a savings goal for user1
       await savingsGoal.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate);
@@ -100,6 +115,8 @@ describe("SavingsGoal", function () {
       const savingsGoalAddress = await savingsGoal.getAddress();
       await usdc.connect(user1).approve(savingsGoalAddress, ethers.MaxUint256);
       // Make a deposit to user1's savings goal
+      // log the user1 balance before the deposit
+      const user1BalanceBefore = await usdc.balanceOf(user1.address);
       await savingsGoal.connect(user1).deposit(0, depositAmount);
       // Expect the currentAmount is equal to the depositAmount
       const goal = await savingsGoal.savingsGoals(0);
@@ -108,9 +125,9 @@ describe("SavingsGoal", function () {
       const user1BalanceAfter = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter = await usdc.balanceOf(await savingsGoal.getAddress());
       const goalzTokenBalanceAfter = await goalzToken.balanceOf(user1.address);
-      expect(user1BalanceAfter).to.equal(ethers.parseEther("995"));
-      expect(savingsGoalBalanceAfter).to.equal(ethers.parseEther("5"));
-      expect(goalzTokenBalanceAfter).to.equal(ethers.parseEther("5"));
+      expect(user1BalanceAfter).to.equal("995000000");
+      expect(savingsGoalBalanceAfter).to.equal("5000000");
+      expect(goalzTokenBalanceAfter).to.equal("5000000");
       // Make another deposit to complete the goal
       await savingsGoal.connect(user1).deposit(0, depositAmount); 
       // Expect the currentAmount is equal to the targetAmount
@@ -120,9 +137,9 @@ describe("SavingsGoal", function () {
       const user1BalanceAfter2 = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter2 = await usdc.balanceOf(await savingsGoal.getAddress());
       const goalzTokenBalanceAfter2 = await goalzToken.balanceOf(user1.address);
-      expect(user1BalanceAfter2).to.equal(ethers.parseEther("990"));
-      expect(savingsGoalBalanceAfter2).to.equal(ethers.parseEther("10"));
-      expect(goalzTokenBalanceAfter2).to.equal(ethers.parseEther("10"));
+      expect(user1BalanceAfter2).to.equal("990000000");
+      expect(savingsGoalBalanceAfter2).to.equal("10000000");
+      expect(goalzTokenBalanceAfter2).to.equal("10000000");
       // Withdraw the funds from the savings goal
       await savingsGoal.connect(user1).withdraw(0);
       // Expect the currentAmount is equal to 0
@@ -132,15 +149,15 @@ describe("SavingsGoal", function () {
       const user1BalanceAfter3 = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter3 = await usdc.balanceOf(await savingsGoal.getAddress());
       const goalzTokenBalanceAfter3 = await goalzToken.balanceOf(user1.address);
-      expect(user1BalanceAfter3).to.equal(ethers.parseEther("1000"));
-      expect(savingsGoalBalanceAfter3).to.equal(ethers.parseEther("0"));
-      expect(goalzTokenBalanceAfter3).to.equal(ethers.parseEther("0"));
+      expect(user1BalanceAfter3).to.equal("1000000000");
+      expect(savingsGoalBalanceAfter3).to.equal("0");
+      expect(goalzTokenBalanceAfter3).to.equal("0");
     });
   });
 
   describe("set a goal and automate the deposits until the goal is complete, then withdraw", function () {
     it("should work", async function () {
-      savingsGoal = await loadSavingsGoalFixture();
+      [savingsGoal, goalzToken] = await loadSavingsGoalFixture();
       
       // Create a savings goal for user1
       await savingsGoal.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate);
@@ -164,8 +181,8 @@ describe("SavingsGoal", function () {
       // Expect the balances for the savings goal contract and user1 to have changed
       const user1BalanceAfter = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter = await usdc.balanceOf(await savingsGoal.getAddress());
-      expect(user1BalanceAfter).to.equal(ethers.parseEther("995"));
-      expect(savingsGoalBalanceAfter).to.equal(ethers.parseEther("5"));
+      expect(user1BalanceAfter).to.equal("995000000");
+      expect(savingsGoalBalanceAfter).to.equal("5000000");
       // Increase the time by 1 day
       await network.provider.send("evm_increaseTime", [86400]);
       await network.provider.send("evm_mine");
@@ -177,8 +194,8 @@ describe("SavingsGoal", function () {
       // Expect the balances for the savings goal contract and user1 to have changed
       const user1BalanceAfter2 = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter2 = await usdc.balanceOf(await savingsGoal.getAddress());
-      expect(user1BalanceAfter2).to.equal(ethers.parseEther("990"));
-      expect(savingsGoalBalanceAfter2).to.equal(ethers.parseEther("10"));
+      expect(user1BalanceAfter2).to.equal("990000000");
+      expect(savingsGoalBalanceAfter2).to.equal("10000000");
       // Withdraw the funds from the savings goal
       await savingsGoal.connect(user1).withdraw(0);
       // Expect the currentAmount is equal to 0
@@ -187,8 +204,8 @@ describe("SavingsGoal", function () {
       // Expect the balances for the savings goal contract and user1 to have changed
       const user1BalanceAfter3 = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter3 = await usdc.balanceOf(await savingsGoal.getAddress());
-      expect(user1BalanceAfter3).to.equal(ethers.parseEther("1000"));
-      expect(savingsGoalBalanceAfter3).to.equal(ethers.parseEther("0"));
+      expect(user1BalanceAfter3).to.equal("1000000000");
+      expect(savingsGoalBalanceAfter3).to.equal("0");
     });
   });
 });
