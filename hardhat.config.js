@@ -12,6 +12,13 @@ module.exports = {
     }
   },
   networks: {
+    hardhat: {
+      forking: {
+        url: process.env.MAINNET_NODE_URL || "",
+        accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+        enabled: true,
+      },
+    },
     tenderly: {
       url: process.env.TENDERLY_NODE_URL,
       accounts: [`0x${process.env.PRIVATE_KEY}`],
