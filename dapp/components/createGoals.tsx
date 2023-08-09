@@ -3,6 +3,20 @@ import { automateDeposit, setGoal } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 
+const EmojiSelect = ({onSelect}) => {
+    const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟']; // Add more emojis as needed
+  
+    return (
+      <select className="form-control" onChange={onSelect}>
+        <option value="">Select an emoji</option>
+        {emojis.map((emoji, index) => (
+          <option key={index} value={emoji}>
+            {emoji}
+          </option>
+        ))}
+      </select>
+    );
+  };
 
 const CreateGoals = () => {
 
@@ -10,6 +24,7 @@ const CreateGoals = () => {
     const [monthlySavings, setMonthlySavings] = React.useState("0.00");
     const [showMonthlyDepositForm, setShowMonthlyDepositForm] = React.useState(false);
     const [monthlyDepositAmount, setMonthlyDepositAmount] = React.useState('');
+    const [emoji, setEmoji] = React.useState('');
 
 
 
@@ -18,7 +33,7 @@ const CreateGoals = () => {
         console.log("Create Goal");
         // Get the what, why, targetAmount, and targetDate from the form
         const what = (document.getElementById("what") as HTMLInputElement).value;
-        const why = (document.getElementById("why") as HTMLInputElement).value;
+        // const why = (document.getElementById("why") as HTMLInputElement).value;
         const targetAmount = (document.getElementById("targetAmount") as HTMLInputElement).value;
         const targetDate = (document.getElementById("targetDate") as HTMLInputElement).value;
         // Transfor the targetAmount and targetDate into the correct format
@@ -28,7 +43,7 @@ const CreateGoals = () => {
         );
         // Log the values for inspection
         console.log("what", what);
-        console.log("why", why);
+        console.log("why", emoji);
         console.log("targetAmount", targetAmountBigNumber.toString());
         console.log("targetDate", targetDateUnix);
         
@@ -36,7 +51,7 @@ const CreateGoals = () => {
         // Try to set the goal
         try {
             setSetGoalLoading(true);
-            let result = await setGoal(what, why, targetAmountBigNumber, targetDateUnix);
+            let result = await setGoal(what, "emoji", targetAmountBigNumber, targetDateUnix);
 
             // Check if we're also creating an automatic deposit
             if (showMonthlyDepositForm) {
@@ -59,6 +74,12 @@ const CreateGoals = () => {
             setSetGoalLoading(false);
         }
 
+    };
+
+    const handleSelectChange = (event) => {
+        const selectedValue = event.target.value;
+        console.log("selectedValue", selectedValue);
+        setEmoji(selectedValue);
     };
 
     // Function that will project how much per month (30 days) we will need to save to reach the targetAmount
@@ -93,9 +114,9 @@ const CreateGoals = () => {
                             </div>
                             <br />
                             <div className="form-group">
-                                <label htmlFor="eventIdInput">Why are you saving?</label>
-                                <input type="text" className="form-control" id="why" />
+                                <EmojiSelect onSelect={handleSelectChange} />
                             </div>
+                            
                             <br />
                             <div className="form-group">
                                 <label htmlFor="eventIdInput">How much USDC are you saving for this goal?</label>
