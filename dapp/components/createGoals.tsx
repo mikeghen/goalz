@@ -33,7 +33,7 @@ const CreateGoals = () => {
         console.log("Create Goal");
         // Get the what, why, targetAmount, and targetDate from the form
         const what = (document.getElementById("what") as HTMLInputElement).value;
-        // const why = (document.getElementById("why") as HTMLInputElement).value;
+        const why = emoji;
         const targetAmount = (document.getElementById("targetAmount") as HTMLInputElement).value;
         const targetDate = (document.getElementById("targetDate") as HTMLInputElement).value;
         // Transfor the targetAmount and targetDate into the correct format
@@ -43,15 +43,15 @@ const CreateGoals = () => {
         );
         // Log the values for inspection
         console.log("what", what);
-        console.log("why", emoji);
+        console.log("why", why);
         console.log("targetAmount", targetAmountBigNumber.toString());
-        console.log("targetDate", targetDateUnix);
+        console.log("targetDate", targetDateUnix);``
         
 
         // Try to set the goal
         try {
             setSetGoalLoading(true);
-            let result = await setGoal(what, "emoji", targetAmountBigNumber, targetDateUnix);
+            let result = await setGoal(what, why, targetAmountBigNumber, targetDateUnix);
 
             // Check if we're also creating an automatic deposit
             if (showMonthlyDepositForm) {

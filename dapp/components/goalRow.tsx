@@ -173,7 +173,7 @@ const GoalRow = ({ goalIndex }) => {
     return (
         <>
             <tr key={`${goalIndex}`}>
-                <td>{goalData.what}</td>
+                <td>{goalData.why} {goalData.what}</td>
                 <td>
                     <div className="progress">
                         <div className="progress-bar" role="progressbar" style={{ width: `${goalProgress}%` }}></div>

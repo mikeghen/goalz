@@ -37,7 +37,7 @@ export const setGoal = async (what: string, why: string, targetAmount: BigNumber
         GOALZ_ABI,
         signer
     );
-    const goalTx = await goalz.setGoal(what, why, targetAmount, targetDate);
+    const goalTx = await goalz.setGoal(what, why, targetAmount, targetDate, USDC_ADDRESS);
     return await goalTx.wait();
 };
 
