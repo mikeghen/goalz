@@ -14,11 +14,11 @@ export const getSigner = (provider: ethers.providers.Web3Provider) => {
     return provider.getSigner();
 };
 
-export const approve = async () => {
+export const approve = async (depositToken: string) => {
     const provider = await getProvider();
     const signer = await getSigner(provider);
     const contract = new ethers.Contract(
-        USDC_ADDRESS,
+        depositToken,
         ERC20_ABI,
         signer
     );

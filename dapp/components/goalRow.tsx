@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useContractRead } from "wagmi";
-import { GOALZ_ADDRESS, GOALZ_ABI } from "../config/constants";
+import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS } from "../config/constants";
 import { approve, deposit, automateDeposit, setGoal } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
@@ -14,6 +14,8 @@ interface GoalData {
     currentAmount: string;
     targetAmount: string;
     targetDate: string;
+    depositToken: string;
+    depositTokenSymbol: string;
     automatedDepositAmount: "",
     automatedDepositDate: "",
 };
@@ -36,6 +38,8 @@ const GoalRow = ({ goalIndex }) => {
         currentAmount: "",
         targetAmount: "",
         targetDate: "",
+        depositToken: "",
+        depositTokenSymbol: "",
         automatedDepositAmount: "",
         automatedDepositDate: "",
     });
@@ -63,6 +67,12 @@ const GoalRow = ({ goalIndex }) => {
         if (goal.data) {
             const targetDate = new Date(goal.data.targetDate.mul(1000).toNumber());
             const goalProgress = goal.data.currentAmount.mul(100).div(goal.data.targetAmount).toNumber();
+            let depositTokenSymbol = "";
+            if (goal.data.depositToken == USDC_ADDRESS) {
+                depositTokenSymbol = "USDC";
+            } else {
+                depositTokenSymbol = "WETH";
+            }
             setGoalProgress(goalProgress);
 
             // Update the goal data state to add the goal data 
@@ -71,6 +81,8 @@ const GoalRow = ({ goalIndex }) => {
                 what: goal.data[0],
                 why: goal.data[1],
                 currentAmount: formatTokenAmount(goal.data[2], 18, 0),
+                depositToken: goal.data.depositToken,
+                depositTokenSymbol: depositTokenSymbol,
                 targetAmount: formatTokenAmount(goal.data[3], 18, 0),
                 targetDate: formatDate(targetDate)
             }));
@@ -141,7 +153,7 @@ const GoalRow = ({ goalIndex }) => {
         // Try to approve the goalz contract to spend the amount
         try {
             setIsApproveLoading(true);
-            await approve();
+            await approve(goalData.depositToken);
             toast.success('Approved!');
         } catch (error) {
             console.log("approve error:", error);
@@ -179,7 +191,7 @@ const GoalRow = ({ goalIndex }) => {
                         <div className="progress-bar" role="progressbar" style={{ width: `${goalProgress}%` }}></div>
                     </div>
                 </td>
-                <td>{goalData.targetAmount} / {goalData.currentAmount} USDC</td>
+                <td>{goalData.targetAmount} / {goalData.currentAmount} {goalData.depositTokenSymbol}</td>
                 <td>{goalData.targetDate}</td>
 
                 {/* if theres an automatedDepositAmount > 0 then display this otherwise display a link to automateDeposit */}
@@ -212,7 +224,7 @@ const GoalRow = ({ goalIndex }) => {
                                     value={depositAmount}
                                     onChange={(e) => setDepositAmount(e.target.value)}
                                     placeholder="0" />
-                                <span className="input-group-text">USDC</span>
+                                <span className="input-group-text">{goalData.depositTokenSymbol}</span>
                             </div>
                             <div className="btn-group" role="group">
                                 <button
