@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract GoalzETH is ERC20, Ownable {
+contract GoalzToken is ERC20, Ownable {
 
     IERC20 public depositToken;
 
-    constructor() ERC20("Goalz ETH", "glzETH") { }
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) { }
 
     function mint(address account, uint256 amount) external onlyOwner {
         _mint(account, amount);

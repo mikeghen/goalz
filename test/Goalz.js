@@ -11,6 +11,8 @@ describe("SavingsGoal", function () {
   let ERC20Mock;
   let usdc;
   let weth;
+  let usdcAddress;
+  let wethAddress;
   let goalzUSD;
   let goalzETH;
   let deployer;
@@ -27,8 +29,13 @@ describe("SavingsGoal", function () {
   // Function that loads the savingsGoal fixture, used in each test
   const loadSavingsGoalFixture = async function () {
     SavingsGoal = await ethers.getContractFactory("Goalz");
-    const _savingsGoal = await SavingsGoal.deploy(await usdc.getAddress(), await weth.getAddress());
-    return _savingsGoal;
+    usdcAddress = usdc.getAddress();
+    wethAddress = weth.getAddress();
+    const _savingsGoal = await SavingsGoal.deploy([usdcAddress, wethAddress]);
+    const _goalzUSD = await ethers.getContractAt("Goalz", await _savingsGoal.goalzTokens(usdcAddress));
+    const _goalzETH = await ethers.getContractAt("Goalz", await _savingsGoal.goalzTokens(wethAddress));
+    
+    return [_savingsGoal, _goalzETH, _goalzUSD];
   }
 
 
@@ -49,16 +56,24 @@ describe("SavingsGoal", function () {
 
   describe("Deployment", function () {
     it("should deploy the contract", async function () {
-      savingsGoal = await loadSavingsGoalFixture();
+      [savingsGoal, goalzETH, goalzUSD] = await loadSavingsGoalFixture();
       expect(await savingsGoal.name()).to.equal("Goalz");
       expect(await savingsGoal.symbol()).to.equal("GOALZ");
-      expect(await savingsGoal.goalzUSD()).to.not.equal(ethers.AddressZero);
+
+      // Check the goalzUSD token name and symbol 
+      expect(await goalzUSD.name()).to.equal("Goalz USD Coin");
+      expect(await goalzUSD.symbol()).to.equal("glzUSDC");
+
+      // Check the goalzETH token name and symbol
+      expect(await goalzETH.name()).to.equal("Goalz Wrapped Ether");
+      expect(await goalzETH.symbol()).to.equal("glzWETH");
+
     });
   });
 
   describe("setGoal", function () {
     before(async function () {
-      savingsGoal = await loadSavingsGoalFixture();
+      [savingsGoal, goalzETH, goalzUSD] = await loadSavingsGoalFixture();
     });
 
     it("should not create a new savings goal if the target amount is 0", async function () {
@@ -97,7 +112,7 @@ describe("SavingsGoal", function () {
 
   context("with savings goals", function () {
     beforeEach(async function () {
-      savingsGoal = await loadSavingsGoalFixture();
+      [savingsGoal, goalzETH, goalzUSD] = await loadSavingsGoalFixture();
       // Create a savings goal for user1 and user2
       await savingsGoal.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, await usdc.getAddress());
       await savingsGoal.connect(user2).setGoal("Car", "For a new car", targetAmount, targetDate, await usdc.getAddress());
@@ -130,7 +145,7 @@ describe("SavingsGoal", function () {
       it("should deposit funds into a savings goal usdc token", async function () {
 
         // Get the goalzUSD
-        goalzUSD = await ethers.getContractAt("Goalz", await savingsGoal.goalzUSD());
+        goalzUSD = await ethers.getContractAt("Goalz", await savingsGoal.goalzTokens(usdcAddress));
 
         // Check the user and the savings goal contract's token balances before and after the deposit
         const user2BalanceBefore = await usdc.balanceOf(user2.address);
@@ -180,7 +195,7 @@ describe("SavingsGoal", function () {
       it("should withdraw funds from a savings goal", async function () {
 
         // Get the goalzUSD
-        goalzUSD = await ethers.getContractAt("Goalz", await savingsGoal.goalzUSD());
+        goalzUSD = await ethers.getContractAt("Goalz", await savingsGoal.goalzTokens(usdcAddress));
 
         // Check user1's balance before and after the withdrawal
         const user1BalanceBefore = await usdc.balanceOf(user1.address);
@@ -331,7 +346,7 @@ describe("SavingsGoal", function () {
         it("should deposit if the automated deposit frequency has been reached", async function () {
 
           // Get the goalzUSD
-          goalzUSD = await ethers.getContractAt("Goalz", await savingsGoal.goalzUSD());
+          goalzUSD = await ethers.getContractAt("Goalz", await savingsGoal.goalzTokens(usdcAddress));
 
           // Increase the time by 1 day
           await network.provider.send("evm_increaseTime", [86400]);
