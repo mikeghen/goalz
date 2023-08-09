@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "./GoalzUSD.sol";
+import "./GoalzToken.sol";
+import "./IGoalzToken.sol";
 import "hardhat/console.sol";
 
 
@@ -18,6 +19,8 @@ contract Goalz is ERC721, ERC721Enumerable {
         uint targetAmount;
         uint currentAmount;
         uint targetDate;
+        address depositToken;
+        bool complete;
     }
 
     struct AutomatedDeposit {
@@ -26,21 +29,32 @@ contract Goalz is ERC721, ERC721Enumerable {
         uint lastDeposit;
     }
 
-    IERC20 public depositToken;
-    GoalzUSD public goalzToken;
+    mapping(address => GoalzToken) public goalzTokens;
     mapping(uint => SavingsGoal) public savingsGoals;
     mapping(uint => AutomatedDeposit) public automatedDeposits;
 
-    event GoalCreated(address indexed saver, uint indexed goalId, string what, string why, uint targetAmount, uint targetDate);
+    event GoalCreated(address indexed saver, uint indexed goalId, string what, string why, uint targetAmount, uint targetDate, address depositToken);
     event GoalDeleted(address indexed saver, uint indexed goalId);
+    event GoalzTokenCreated(address indexed depositToken, address indexed goalzToken);
     event DepositMade(address indexed saver, uint indexed goalId, uint amount);
     event WithdrawMade(address indexed saver, uint indexed goalId, uint amount);
     event AutomatedDepositCreated(address indexed saver, uint indexed goalId, uint amount, uint frequency);
     event AutomatedDepositCanceled(address indexed saver, uint indexed goalId);
 
-    constructor(address _depositTokenAddress) ERC721("Goalz", "GOALZ") {
-        depositToken = IERC20(_depositTokenAddress);
-        goalzToken = new GoalzUSD();
+    constructor(address[] memory _initialDepositTokens) ERC721("Goalz", "GOALZ") {
+        for (uint i = 0; i < _initialDepositTokens.length; i++) {
+            _addDepositToken(_initialDepositTokens[i]);
+        }
+    }
+
+    function _addDepositToken(address depositToken) internal {
+        ERC20 token = ERC20(depositToken);
+        GoalzToken goalzToken = new GoalzToken(
+            string.concat("Goalz ", token.name()), 
+            string.concat("glz", token.symbol())
+        );
+        goalzTokens[depositToken] = goalzToken;
+        emit GoalzTokenCreated(address(depositToken), address(goalzToken));
     }
 
     modifier goalExists(uint goalId) {
@@ -62,17 +76,19 @@ contract Goalz is ERC721, ERC721Enumerable {
         string memory what, 
         string memory why, 
         uint targetAmount, 
-        uint targetDate
+        uint targetDate,
+        address depositToken
     ) external {
         require(targetAmount > 0, "Target amount should be greater than 0");
         require(targetDate > block.timestamp, "Target date should be in the future");
+        require(address(goalzTokens[depositToken]) != address(0), "Deposit token should be USDC or WETH");
 
         uint goalId = _tokenIdCounter.current();
-        savingsGoals[goalId] = SavingsGoal(what, why, targetAmount, 0, targetDate);
+        savingsGoals[goalId] = SavingsGoal(what, why, targetAmount, 0, targetDate, depositToken, false);
         _mint(msg.sender, goalId);
         _tokenIdCounter.increment();
 
-        emit GoalCreated(msg.sender, goalId, what, why, targetAmount, targetDate);
+        emit GoalCreated(msg.sender, goalId, what, why, targetAmount, targetDate, depositToken);
     }
 
     function deleteGoal(uint goalId) external goalExists(goalId) isGoalOwner(goalId) {
@@ -88,10 +104,10 @@ contract Goalz is ERC721, ERC721Enumerable {
         require(amount > 0, "Deposit amount should be greater than 0");
         SavingsGoal storage goal = savingsGoals[goalId];
         require(goal.currentAmount + amount <= goal.targetAmount, "Deposit exceeds the goal target amount");
-
-        depositToken.transferFrom(msg.sender, address(this), amount);
-        goalzToken.mint(msg.sender, amount);
-        goal.currentAmount += amount;
+        if(goal.currentAmount + amount == goal.targetAmount) {
+            goal.complete = true;
+        }
+        _deposit(msg.sender, goal, amount);
 
         emit DepositMade(msg.sender, goalId, amount);
     }
@@ -102,8 +118,8 @@ contract Goalz is ERC721, ERC721Enumerable {
 
         uint amount = goal.currentAmount;
         goal.currentAmount = 0;
-        goalzToken.burn(msg.sender, amount);
-        depositToken.transfer(msg.sender, amount);
+        goalzTokens[goal.depositToken].burn(msg.sender, amount);
+        IERC20(goal.depositToken).transfer(msg.sender, amount);
 
         emit WithdrawMade(msg.sender, goalId, amount);
     }
@@ -130,9 +146,9 @@ contract Goalz is ERC721, ERC721Enumerable {
 
         SavingsGoal storage goal = savingsGoals[goalId];
         uint amount = _automatedDeposit.amount;
-        depositToken.transferFrom(ownerOf(goalId), address(this), amount);
-        goalzToken.mint(ownerOf(goalId), amount);
-        goal.currentAmount += amount;
+
+        _deposit(ownerOf(goalId), goal, amount);
+
         _automatedDeposit.lastDeposit = block.timestamp;
 
         emit DepositMade(msg.sender, goalId, amount);
@@ -142,5 +158,11 @@ contract Goalz is ERC721, ERC721Enumerable {
     /// TODO: Should these be transferrable?
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 data) internal override(ERC721, ERC721Enumerable) {
         super._beforeTokenTransfer(from, to, tokenId, data);
+    }
+
+    function _deposit(address account, SavingsGoal storage goal, uint amount) internal {
+        IERC20(goal.depositToken).transferFrom(account, address(this), amount);
+        goalzTokens[goal.depositToken].mint(account, amount);
+        goal.currentAmount += amount;
     }
 }

@@ -9,8 +9,12 @@ describe("SavingsGoal", function () {
   let SavingsGoal;
   let savingsGoal;
   let ERC20Mock;
-  let erc20;
-  let goalzToken;
+  let usdc;
+  let weth;
+  let usdcAddress;
+  let wethAddress;
+  let goalzUSD;
+  let goalzETH;
   let deployer;
   let user1;
   let user2;
@@ -25,50 +29,66 @@ describe("SavingsGoal", function () {
   // Function that loads the savingsGoal fixture, used in each test
   const loadSavingsGoalFixture = async function () {
     SavingsGoal = await ethers.getContractFactory("Goalz");
-    const _savingsGoal = await SavingsGoal.deploy(await erc20.getAddress());
-    return _savingsGoal;
+    usdcAddress = usdc.getAddress();
+    wethAddress = weth.getAddress();
+    const _savingsGoal = await SavingsGoal.deploy([usdcAddress, wethAddress]);
+    const _goalzUSD = await ethers.getContractAt("Goalz", await _savingsGoal.goalzTokens(usdcAddress));
+    const _goalzETH = await ethers.getContractAt("Goalz", await _savingsGoal.goalzTokens(wethAddress));
+    
+    return [_savingsGoal, _goalzETH, _goalzUSD];
   }
 
 
   before(async function () {
     // Set addresses for deployer, user1, and user2
     [deployer, user1, user2, automatoor] = await ethers.getSigners();
-    // Make a mock ERC20 token
+    // Make a mock usdc token
     ERC20Mock = await ethers.getContractFactory("ERC20Mock");
-    erc20 = await ERC20Mock.deploy("USDC", "USDC");
+    usdc = await ERC20Mock.deploy("USD Coin", "USDC");
+    weth = await ERC20Mock.deploy("Wrapped Ether", "WETH");
     
     // Give user1 and user2 some tokens
-    await erc20.mint(user1.address, ethers.parseEther("1000"));
-    await erc20.mint(user2.address, ethers.parseEther("1000"));
+    await usdc.mint(user1.address, ethers.parseEther("1000"));
+    await usdc.mint(user2.address, ethers.parseEther("1000"));
+    await weth.mint(user1.address, ethers.parseEther("1000"));
+    await weth.mint(user2.address, ethers.parseEther("1000"));
   });
 
   describe("Deployment", function () {
     it("should deploy the contract", async function () {
-      savingsGoal = await loadSavingsGoalFixture();
+      [savingsGoal, goalzETH, goalzUSD] = await loadSavingsGoalFixture();
       expect(await savingsGoal.name()).to.equal("Goalz");
       expect(await savingsGoal.symbol()).to.equal("GOALZ");
-      expect(await savingsGoal.goalzToken()).to.not.equal(ethers.AddressZero);
+
+      // Check the goalzUSD token name and symbol 
+      expect(await goalzUSD.name()).to.equal("Goalz USD Coin");
+      expect(await goalzUSD.symbol()).to.equal("glzUSDC");
+
+      // Check the goalzETH token name and symbol
+      expect(await goalzETH.name()).to.equal("Goalz Wrapped Ether");
+      expect(await goalzETH.symbol()).to.equal("glzWETH");
+
     });
   });
 
   describe("setGoal", function () {
     before(async function () {
-      savingsGoal = await loadSavingsGoalFixture();
+      [savingsGoal, goalzETH, goalzUSD] = await loadSavingsGoalFixture();
     });
 
     it("should not create a new savings goal if the target amount is 0", async function () {
-      await expect(savingsGoal.setGoal("Vacation", "For a dream vacation", 0, targetDate)).to.be.revertedWith("Target amount should be greater than 0");
+      await expect(savingsGoal.setGoal("Vacation", "For a dream vacation", 0, targetDate, await usdc.getAddress())).to.be.revertedWith("Target amount should be greater than 0");
     });
 
     it("should not create a new savings goal if the target date is in the past", async function () {
-      await expect(savingsGoal.setGoal("Vacation", "For a dream vacation", targetAmount, Math.floor(Date.now() / 1000) - 1)).to.be.revertedWith("Target date should be in the future");
+      await expect(savingsGoal.setGoal("Vacation", "For a dream vacation", targetAmount, Math.floor(Date.now() / 1000) - 1, await usdc.getAddress())).to.be.revertedWith("Target date should be in the future");
     });
 
     it("should create a new savings goals", async function () {
       expect(
-        await savingsGoal.setGoal("Vacation", "For a dream vacation", targetAmount, targetDate)
+        await savingsGoal.setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, await usdc.getAddress())
       ).to.emit(savingsGoal, "GoalCreated")
-      .withArgs(user1.address, 0, "Vacation", "For a dream vacation", targetAmount, targetDate);
+      .withArgs(user1.address, 0, "Vacation", "For a dream vacation", targetAmount, targetDate, await usdc.getAddress());
 
       const goal = await savingsGoal.savingsGoals(0);
       expect(goal.what).to.equal("Vacation");
@@ -76,28 +96,30 @@ describe("SavingsGoal", function () {
       expect(goal.targetAmount).to.equal(targetAmount);
       expect(goal.targetDate).to.equal(targetDate);
       expect(goal.currentAmount).to.equal(0);
+      expect(goal.depositToken).to.equal(await usdc.getAddress())
 
-      // Create a second goal
-      await savingsGoal.setGoal("Car", "For a new car", targetAmount, targetDate);
+      // Create a second goal with weth
+      await savingsGoal.setGoal("Car", "For a new car", targetAmount, targetDate, await weth.getAddress());
       const goal2 = await savingsGoal.savingsGoals(1);
       expect(goal2.what).to.equal("Car");
       expect(goal2.why).to.equal("For a new car");
       expect(goal2.targetAmount).to.equal(targetAmount);
       expect(goal2.targetDate).to.equal(targetDate);
       expect(goal2.currentAmount).to.equal(0);
+      expect(goal2.depositToken).to.equal(await weth.getAddress())
     });
   }); 
 
   context("with savings goals", function () {
     beforeEach(async function () {
-      savingsGoal = await loadSavingsGoalFixture();
+      [savingsGoal, goalzETH, goalzUSD] = await loadSavingsGoalFixture();
       // Create a savings goal for user1 and user2
-      await savingsGoal.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate);
-      await savingsGoal.connect(user2).setGoal("Car", "For a new car", targetAmount, targetDate);
+      await savingsGoal.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, await usdc.getAddress());
+      await savingsGoal.connect(user2).setGoal("Car", "For a new car", targetAmount, targetDate, await usdc.getAddress());
       // Approve the savings goal contract to spend user1's and user2's tokens
       const savingsGoalAddress = await savingsGoal.getAddress();
-      await erc20.connect(user1).approve(savingsGoalAddress, ethers.MaxUint256);
-      await erc20.connect(user2).approve(savingsGoalAddress, ethers.MaxUint256);
+      await usdc.connect(user1).approve(savingsGoalAddress, ethers.MaxUint256);
+      await usdc.connect(user2).approve(savingsGoalAddress, ethers.MaxUint256);
     });
 
     describe("deposit", function () {
@@ -120,15 +142,15 @@ describe("SavingsGoal", function () {
         ).to.be.revertedWith("Deposit exceeds the goal target amount");
       });
 
-      it("should deposit funds into a savings goal", async function () {
+      it("should deposit funds into a savings goal usdc token", async function () {
 
-        // Get the goalzToken
-        goalzToken = await ethers.getContractAt("Goalz", await savingsGoal.goalzToken());
+        // Get the goalzUSD
+        goalzUSD = await ethers.getContractAt("Goalz", await savingsGoal.goalzTokens(usdcAddress));
 
         // Check the user and the savings goal contract's token balances before and after the deposit
-        const user2BalanceBefore = await erc20.balanceOf(user2.address);
-        const savingsGoalBalanceBefore = await erc20.balanceOf(await savingsGoal.getAddress());
-        const goalzTokenBalanceBefore = await goalzToken.balanceOf(user2.address);
+        const user2BalanceBefore = await usdc.balanceOf(user2.address);
+        const savingsGoalBalanceBefore = await usdc.balanceOf(await savingsGoal.getAddress());
+        const goalzUSDBalanceBefore = await goalzUSD.balanceOf(user2.address);
 
         expect(
           await savingsGoal.connect(user2).deposit(1, depositAmount)
@@ -139,12 +161,12 @@ describe("SavingsGoal", function () {
         expect(goal.currentAmount).to.equal(depositAmount);
 
         // Check and verify the balances afterwards
-        const user2BalanceAfter = await erc20.balanceOf(user2.address);
-        const savingsGoalBalanceAfter = await erc20.balanceOf(await savingsGoal.getAddress());
-        const goalzTokenBalanceAfter = await goalzToken.balanceOf(user2.address);
+        const user2BalanceAfter = await usdc.balanceOf(user2.address);
+        const savingsGoalBalanceAfter = await usdc.balanceOf(await savingsGoal.getAddress());
+        const goalzUSDBalanceAfter = await goalzUSD.balanceOf(user2.address);
         expect(user2BalanceAfter).to.equal(user2BalanceBefore - depositAmount);
         expect(savingsGoalBalanceAfter).to.equal(savingsGoalBalanceBefore + depositAmount);
-        expect(goalzTokenBalanceAfter).to.equal(goalzTokenBalanceBefore + depositAmount);
+        expect(goalzUSDBalanceAfter).to.equal(goalzUSDBalanceBefore + depositAmount);
 
       });
     });
@@ -172,12 +194,12 @@ describe("SavingsGoal", function () {
 
       it("should withdraw funds from a savings goal", async function () {
 
-        // Get the goalzToken
-        goalzToken = await ethers.getContractAt("Goalz", await savingsGoal.goalzToken());
+        // Get the goalzUSD
+        goalzUSD = await ethers.getContractAt("Goalz", await savingsGoal.goalzTokens(usdcAddress));
 
         // Check user1's balance before and after the withdrawal
-        const user1BalanceBefore = await erc20.balanceOf(user1.address);
-        const user1GoalzTokenBalanceBefore = await goalzToken.balanceOf(user1.address);
+        const user1BalanceBefore = await usdc.balanceOf(user1.address);
+        const user1goalzUSDBalanceBefore = await goalzUSD.balanceOf(user1.address);
 
 
         expect(
@@ -189,10 +211,10 @@ describe("SavingsGoal", function () {
         expect(goal.currentAmount).to.equal(0);
 
         // Check user1's balance after the withdrawal
-        const user1BalanceAfter = await erc20.balanceOf(user1.address);
-        const user1GoalzTokenBalanceAfter = await goalzToken.balanceOf(user1.address);
+        const user1BalanceAfter = await usdc.balanceOf(user1.address);
+        const user1goalzUSDBalanceAfter = await goalzUSD.balanceOf(user1.address);
         expect(user1BalanceAfter).to.equal(user1BalanceBefore + depositAmount);
-        expect(user1GoalzTokenBalanceAfter).to.equal(user1GoalzTokenBalanceBefore - depositAmount);
+        expect(user1goalzUSDBalanceAfter).to.equal(user1goalzUSDBalanceBefore - depositAmount);
       });
     });
 
@@ -323,17 +345,17 @@ describe("SavingsGoal", function () {
 
         it("should deposit if the automated deposit frequency has been reached", async function () {
 
-          // Get the goalzToken
-          goalzToken = await ethers.getContractAt("Goalz", await savingsGoal.goalzToken());
+          // Get the goalzUSD
+          goalzUSD = await ethers.getContractAt("Goalz", await savingsGoal.goalzTokens(usdcAddress));
 
           // Increase the time by 1 day
           await network.provider.send("evm_increaseTime", [86400]);
           await network.provider.send("evm_mine");
 
           // Check balances of the user1 and the savings goal contract
-          const user1BalanceBefore = await erc20.balanceOf(user1.address);
-          const savingsGoalBalanceBefore = await erc20.balanceOf(await savingsGoal.getAddress());
-          const goalzTokenBalanceBefore = await goalzToken.balanceOf(user1.address);
+          const user1BalanceBefore = await usdc.balanceOf(user1.address);
+          const savingsGoalBalanceBefore = await usdc.balanceOf(await savingsGoal.getAddress());
+          const goalzUSDBalanceBefore = await goalzUSD.balanceOf(user1.address);
 
           expect(
             await savingsGoal.connect(automatoor).automatedDeposit(0)
@@ -344,14 +366,14 @@ describe("SavingsGoal", function () {
           expect(goal.currentAmount).to.equal(depositAmount);
 
           // Check balances of the user1 and the savings goal contract
-          const user1BalanceAfter = await erc20.balanceOf(user1.address);
-          const savingsGoalBalanceAfter = await erc20.balanceOf(await savingsGoal.getAddress());
-          const goalzTokenBalanceAfter = await goalzToken.balanceOf(user1.address);
+          const user1BalanceAfter = await usdc.balanceOf(user1.address);
+          const savingsGoalBalanceAfter = await usdc.balanceOf(await savingsGoal.getAddress());
+          const goalzUSDBalanceAfter = await goalzUSD.balanceOf(user1.address);
 
           // Check that the user1's and savings goal contract's balances have changed
           expect(user1BalanceAfter).to.equal(user1BalanceBefore - depositAmount);
           expect(savingsGoalBalanceAfter).to.equal(savingsGoalBalanceBefore + depositAmount);
-          expect(goalzTokenBalanceAfter).to.equal(goalzTokenBalanceBefore + depositAmount);
+          expect(goalzUSDBalanceAfter).to.equal(goalzUSDBalanceBefore + depositAmount);
         });
       });
     });
