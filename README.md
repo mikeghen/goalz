@@ -1,5 +1,7 @@
 # Goalz: Onchain Savings Accounts with a Purpose
 
+![Goalz Homepage](./images/goalzHomePage.png)
+
 ## Problem: Saving is hard
 There are important things in life that we want to buy. Without savings, people either don't buy or will use credit to buy. Saving money in a single savings account can be challenging by itself. It becomes even harder when you are trying to save for multiple things at the same time within a single savings account. Tools like Mint support savings goals but are limited to one goal per one account. To make many savings goals with Mint requires making many seperate savings account. This can be done in traditional finance but it's difficult and out of reach for some people.
 
