@@ -3,8 +3,36 @@
 ## Problem: Saving is hard
 There are important things in life that we want to buy. Without savings, people either don't buy or will use credit to buy. Saving money in a single savings account can be challenging by itself. It becomes even harder when you are trying to save for multiple things at the same time within a single savings account. Tools like Mint support savings goals but are limited to one goal per one account. To make many savings goals with Mint requires making many seperate savings account. This can be done in traditional finance but it's difficult and out of reach for some people.
 
-## Solution: Blockchain-based Savings Accounts
+### Existing Solutions & Their Limitations
+
+#### Savings Goal Mobile Apps
+These applications available in iOS and Android let you set up savings schedules. They will tell you how much you need to save to rach your goal and will give you alerts when it's time to save.
+
+##### Limitations
+* Not connected to a bank account
+* Not automated so you have to manually make deposits
+* Essentially a reminder tool
+
+#### Mint Savings Goals
+This application through mint let's you create goals for things like paying down debt or saving for a downpayment on a car/house. It includes features that take things like interest rates into account. You can select one of you connected accounts to use to track your progress
+
+##### Limitations
+* Must open a dedicated account for each goal
+* Can't automated deposits through Mint, must be set up through your bank
+* Goal tracking is view only 
+
+## Goalz Solution: Blockchain-based Savings Accounts
 Goalz is a decentralized application you can use to manage multiple savings goals in an user friendly way. Goalz uses Base blockchain to allow you to make individual savings accounts for all of your savings goals using a single wallet. Goalz makes it easy to make many savings goals and automate the savings process. 
+
+### Features
+* Create multiple savings goals
+* Create automated deposits when creating a goal
+* Select what asset you want to use to save in (e.g. USDC or ETH)
+
+### Why this solution solves the problem
+The limitations of the traditional finance way of doing this are that you (1) need to open an account for each of your goals and (2) you must set up the automation on your own with your bank which might not support the automation.
+
+The features of the Ethereum blockchain are put to full use with Goalz Savings app. Each goal can be it's own account with it's own asset to use for saving (e.g. ETH or USDC). Deposits can be automated using smart contracts like Gelato. There is no limitation on the number of accounts, no overhead to open an account, and the accounts themselves can be fully automated in ways that no traditional bank account can be.
 
 ## Protocol Specification
 
