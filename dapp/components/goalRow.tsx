@@ -46,6 +46,7 @@ const GoalRow = ({ goalIndex }) => {
         contractInterface: GOALZ_ABI,
         functionName: "savingsGoals",
         args: [goalIndex],
+        watch: true,
     });
 
     const automatedDeposit = useContractRead({
@@ -53,6 +54,7 @@ const GoalRow = ({ goalIndex }) => {
         contractInterface: GOALZ_ABI,
         functionName: "automatedDeposits",
         args: [goalIndex],
+        watch: true,
     });
 
     // ---
