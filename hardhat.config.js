@@ -19,11 +19,11 @@ module.exports = {
         enabled: true,
       },
     },
-    tenderly: {
-      url: process.env.TENDERLY_NODE_URL,
-      accounts: [`0x${process.env.PRIVATE_KEY}`],
-      // 84531 is the network ID of the Tenderly Mainnet fork (Base Goerli)
-    },
+    // tenderly: {
+    //   url: process.env.TENDERLY_NODE_URL,
+    //   accounts: [`0x${process.env.PRIVATE_KEY}`],
+    //   // 84531 is the network ID of the Tenderly Mainnet fork (Base Goerli)
+    // },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN

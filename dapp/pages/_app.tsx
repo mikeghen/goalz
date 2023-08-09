@@ -22,8 +22,8 @@ export const baseGoerli: Chain = {
     symbol: 'ETH',
   },
   rpcUrls: {
-    public: 'https://rpc.tenderly.co/fork/83a48775-3515-4100-a9fc-ab775d6d3af3',
-    default: 'https://rpc.tenderly.co/fork/83a48775-3515-4100-a9fc-ab775d6d3af3',
+    public: 'https://rpc.tenderly.co/fork/54e3e8d1-5bbb-4abd-ae3f-51926d72512b',
+    default: 'https://rpc.tenderly.co/fork/54e3e8d1-5bbb-4abd-ae3f-51926d72512b',
   },
 } 
 
