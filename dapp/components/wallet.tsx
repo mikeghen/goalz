@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useContractRead, useSigner } from "wagmi";
-import { GOALZ_USD_ADDRESS, USDC_ADDRESS, ERC20_ABI } from '../config/constants';
+import { GOALZ_USDC_ADDRESS, GOALZ_WETH_ADDRESS, USDC_ADDRESS, WETH_ADDRESS, ERC20_ABI } from '../config/constants';
 import { formatTokenAmount } from '../utils/helpers';
 import Link from "next/link"; // Import the Link component from Next.js
+import { use } from 'chai';
 
 
 const Wallet: React.FC<{}> = () => {
@@ -10,10 +11,20 @@ const Wallet: React.FC<{}> = () => {
   const { address } = useAccount();
 
   const [goalzUsdBalance, getGoalzUsdBalance] = useState("0.00");
+  const [goalzWethBalance, getGoalzWethBalance] = useState("0.00");
   const [usdcBalance, getUsdcBalance] = useState("0.00");
+  const [wethBalance, getWethBalance] = useState("0.00");
 
   const goalzUsdBalanceData = useContractRead({
-    addressOrName: GOALZ_USD_ADDRESS,
+    addressOrName: GOALZ_USDC_ADDRESS,
+    contractInterface: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [address],
+    watch: true,
+  });
+
+  const goalzWethBalanceData = useContractRead({
+    addressOrName: GOALZ_WETH_ADDRESS,
     contractInterface: ERC20_ABI,
     functionName: 'balanceOf',
     args: [address],
@@ -28,6 +39,17 @@ const Wallet: React.FC<{}> = () => {
     watch: true,
   });
 
+  const wethBalanceData = useContractRead({
+    addressOrName: WETH_ADDRESS,
+    contractInterface: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [address],
+    watch: true,
+  });
+
+
+
+
   useEffect(() => {
     if (goalzUsdBalanceData.data) {
       getGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data, 18, 2));
@@ -35,10 +57,22 @@ const Wallet: React.FC<{}> = () => {
   }, [goalzUsdBalanceData.data]);
 
   useEffect(() => {
+    if (goalzWethBalanceData.data) {
+      getGoalzWethBalance(formatTokenAmount(goalzWethBalanceData.data, 18, 2));
+    }
+  }, [goalzWethBalanceData.data]);
+
+  useEffect(() => {
     if (usdcBalanceData.data) {
       getUsdcBalance(formatTokenAmount(usdcBalanceData.data, 18, 2));
     }
   }, [usdcBalanceData.data]);
+
+  useEffect(() => {
+    if (wethBalanceData.data) {
+      getWethBalance(formatTokenAmount(wethBalanceData.data, 18, 2));
+    }
+  }, [wethBalanceData.data]);
 
   // Function to handle adding a new goal row
   const handleAddNewGoalRow = () => {
@@ -74,12 +108,19 @@ const Wallet: React.FC<{}> = () => {
               <table className="table">
                 <tbody>
                   <tr>
+                    <td></td>
+                    <td>USDC</td>
+                    <td>WETH</td>
+                  </tr>
+                  <tr>
                     <td>Available:</td>
-                    <td>{usdcBalance} USDC</td>
+                    <td>{usdcBalance}</td>
+                    <td>{wethBalance}</td>
                   </tr>
                   <tr>
                     <td>Deposited:</td>
-                    <td>{goalzUsdBalance} USDC</td>
+                    <td>{goalzUsdBalance}</td>
+                    <td>{goalzWethBalance}</td>
                   </tr>
                 </tbody>
               </table>
