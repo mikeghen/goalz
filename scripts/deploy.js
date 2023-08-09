@@ -4,15 +4,25 @@ async function main() {
 
   // Deploy ERC20Mock token
   const ERC20Mock = await hre.ethers.getContractFactory("ERC20Mock");
-  const erc20Mock = await ERC20Mock.deploy("Goalz USD", "glzUSD");
-  const erc20MockAddress = await erc20Mock.getAddress();
-  console.log("ERC20Mock deployed to:", erc20MockAddress);
+  const usdc = await ERC20Mock.deploy("USD Coin", "USDC");
+  const usdcAddress = await usdc.getAddress();
+  console.log("Mock USDC deployed to:", usdcAddress);
+
+  const weth = await ERC20Mock.deploy("Wrapped Ether", "WETH");
+  const wethAddress = await weth.getAddress();
+  console.log("Mock WETH deployed to:", wethAddress);
   
   // Deploy GoalzToken
   const Goalz = await hre.ethers.getContractFactory("Goalz");
-  const goalz = await Goalz.deploy(erc20MockAddress);
+  const goalz = await Goalz.deploy([usdcAddress, wethAddress]);
   const goalzAddress = await goalz.getAddress();
-  console.log("GoalzToken deployed to:", goalzAddress);
+  console.log("Goalz deployed to:", goalzAddress);
+
+  const glzUSDCAddress = await goalz.goalzTokens(usdcAddress);
+  console.log("Goalz USDC deployed to:", glzUSDCAddress);
+
+  const glzWETHAddress = await goalz.goalzTokens(wethAddress);
+  console.log("Goalz WETH deployed to:", glzWETHAddress);
 
 }
 
