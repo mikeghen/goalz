@@ -142,6 +142,7 @@ const GoalRow = ({ goalIndex }) => {
             toast.error('Deposit error.');
         } finally {
             setIsDepositLoading(false);
+            setIsExpandedDeposit(false);
         }
 
     }
@@ -179,6 +180,7 @@ const GoalRow = ({ goalIndex }) => {
             toast.error('Error automating deposit.');
         } finally {
             setIsAutomateDepositLoading(false);
+            setIsExpandedAutomate(false);
         }
     }
 
