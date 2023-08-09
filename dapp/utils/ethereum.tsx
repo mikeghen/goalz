@@ -29,7 +29,7 @@ export const approve = async () => {
     await approvalTx.wait();
 };
 
-export const setGoal = async (what: string, why: string, targetAmount: BigNumber, targetDate: BigNumber) => {
+export const setGoal = async (depositToken: string, what: string, why: string, targetAmount: BigNumber, targetDate: BigNumber) => {
     const provider = await getProvider();
     const signer = await getSigner(provider);
     const goalz = new ethers.Contract(
@@ -37,7 +37,7 @@ export const setGoal = async (what: string, why: string, targetAmount: BigNumber
         GOALZ_ABI,
         signer
     );
-    const goalTx = await goalz.setGoal(what, why, targetAmount, targetDate, USDC_ADDRESS);
+    const goalTx = await goalz.setGoal(what, why, targetAmount, targetDate, depositToken);
     return await goalTx.wait();
 };
 

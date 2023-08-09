@@ -2,6 +2,7 @@ import React from 'react';
 import { automateDeposit, setGoal } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
+import { USDC_ADDRESS, WETH_ADDRESS } from '../config/constants';
 
 const EmojiSelect = ({onSelect}) => {
     const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟']; // Add more emojis as needed
@@ -25,6 +26,8 @@ const CreateGoals = () => {
     const [showMonthlyDepositForm, setShowMonthlyDepositForm] = React.useState(false);
     const [monthlyDepositAmount, setMonthlyDepositAmount] = React.useState('');
     const [emoji, setEmoji] = React.useState('');
+    const [depositToken, setDepositToken] = React.useState(''); // [USDC_ADDRESS, WETH_ADDRESS]
+    const [unit, setUnit] = React.useState('USDC');
 
 
 
@@ -51,7 +54,7 @@ const CreateGoals = () => {
         // Try to set the goal
         try {
             setSetGoalLoading(true);
-            let result = await setGoal(what, why, targetAmountBigNumber, targetDateUnix);
+            let result = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix);
 
             // Check if we're also creating an automatic deposit
             if (showMonthlyDepositForm) {
@@ -76,10 +79,21 @@ const CreateGoals = () => {
 
     };
 
-    const handleSelectChange = (event) => {
+    const handleEmojiSelectChange = (event) => {
         const selectedValue = event.target.value;
-        console.log("selectedValue", selectedValue);
         setEmoji(selectedValue);
+    };
+
+    const handleTokenSelectChange = (event) => {
+        const selectedValue = event.target.value;
+        console.log("depositToken", selectedValue)
+        if(selectedValue === USDC_ADDRESS) {
+            setUnit("USDC");
+        }
+        if(selectedValue === WETH_ADDRESS) {
+            setUnit("WETH");
+        }
+        setDepositToken(selectedValue);
     };
 
     // Function that will project how much per month (30 days) we will need to save to reach the targetAmount
@@ -114,9 +128,22 @@ const CreateGoals = () => {
                             </div>
                             <br />
                             <div className="form-group">
-                                <EmojiSelect onSelect={handleSelectChange} />
+                                <label htmlFor="eventIdInput">Give your goal an emjoi </label>
+                                <EmojiSelect onSelect={handleEmojiSelectChange} />
                             </div>
-                            
+                            <br/>
+                            <div className="form-group">
+                            <label htmlFor="depositTokenInput">What token do you want to save?</label>
+                            <select className="form-control" onChange={handleTokenSelectChange}>                                
+                                <option key={0} value={USDC_ADDRESS}>
+                                    USDC 
+                                </option>
+                                <option key={1} value={WETH_ADDRESS}>
+                                    WETH 
+                                </option>
+                            </select>
+                            </div>
+
                             <br />
                             <div className="form-group">
                                 <label htmlFor="eventIdInput">How much USDC are you saving for this goal?</label>
@@ -145,7 +172,7 @@ const CreateGoals = () => {
                             </div>
                             <br />
                             <div className="alert alert-success" role="alert">
-                                You need to save <strong>${monthlySavings}</strong> per month to reach your goal.
+                                You need to save <strong>{monthlySavings} {unit}</strong> per month to reach your goal.
                             </div>
                             <br />
 
