@@ -4,11 +4,11 @@ import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 import { USDC_ADDRESS, WETH_ADDRESS } from '../config/constants';
 
-const EmojiSelect = ({onSelect}) => {
-    const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟']; // Add more emojis as needed
+const EmojiSelect = ({ onSelect, selectedEmoji }) => {
+    const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟', '💻', '🚗']; // Add more emojis as needed
   
     return (
-      <select className="form-control" onChange={onSelect}>
+      <select className="form-control" onChange={onSelect} value={selectedEmoji}>
         <option value="">Select an emoji</option>
         {emojis.map((emoji, index) => (
           <option key={index} value={emoji}>
@@ -19,6 +19,33 @@ const EmojiSelect = ({onSelect}) => {
     );
   };
 
+const TokenSelect = ({ onSelect, selectedToken }) => {
+    return (
+      <select className="form-control" onChange={onSelect} value={selectedToken}>
+        <option value={USDC_ADDRESS}>USDC</option>
+        <option value={WETH_ADDRESS}>WETH</option>
+      </select>
+    );
+  };
+  
+  
+
+  const ExampleGoalCard = ({ goal, emoji, token, onStart }) => {
+    return (
+      <div className="col-md-3 mb-4">
+        <div className="card ">
+          <div className="card-body d-flex flex-column align-items-center justify-content-center">
+            <p className="text-center">{`${goal} ${emoji}`}</p>
+            <button className="btn btn-outline-primary mt-2" onClick={onStart}>
+              Start
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };  
+  
+
 const CreateGoals = () => {
 
     const [setGoalLoading, setSetGoalLoading] = React.useState(false);
@@ -26,10 +53,18 @@ const CreateGoals = () => {
     const [showMonthlyDepositForm, setShowMonthlyDepositForm] = React.useState(false);
     const [monthlyDepositAmount, setMonthlyDepositAmount] = React.useState('');
     const [emoji, setEmoji] = React.useState('');
-    const [depositToken, setDepositToken] = React.useState(''); // [USDC_ADDRESS, WETH_ADDRESS]
+    const [depositToken, setDepositToken] = React.useState(USDC_ADDRESS); // [USDC_ADDRESS, WETH_ADDRESS]
     const [unit, setUnit] = React.useState('USDC');
+    const [what, setWhat] = React.useState('');
+    const [why, setWhy] = React.useState('');
+    const [targetAmount, setTargetAmount] = React.useState('');
 
-
+    const exampleGoals = [
+        { goal: 'Save for a trip', emoji: '🏖️', token: USDC_ADDRESS, amount: '' },
+        { goal: 'Save for a macbook', emoji: '💻', token: USDC_ADDRESS, amount: '' },
+        { goal: 'Save for a car', emoji: '🚗', token: USDC_ADDRESS,amount: '' },
+        { goal: 'Save 1 ETH', emoji: '💰', token: WETH_ADDRESS, amount: '1'},
+      ];
 
     const handleCreateGoal = async () => {
         // Creating an event will create a new stealth meta-address and save this information to a local database
@@ -115,8 +150,35 @@ const CreateGoals = () => {
         setMonthlyDepositAmount(event.target.value);
     };
 
+    const setExampleGoal = (goal, emoji, token, amount) => {
+        (document.getElementById("what") as HTMLInputElement).value = goal;
+        (document.getElementById("targetAmount") as HTMLInputElement).value = amount;
+        setEmoji(emoji);
+        setDepositToken(token);
+        setUnit(token === USDC_ADDRESS ? "USDC" : "WETH");
+      };
+
     return (
         <div className="container">
+            {/* Row with example goal cards */}
+            <div className="row">
+                {exampleGoals.map((exampleGoal, index) => (
+                    <ExampleGoalCard
+                    key={index}
+                    goal={exampleGoal.goal}
+                    emoji={exampleGoal.emoji}
+                    token={exampleGoal.token}
+                    onStart={() =>
+                      setExampleGoal(
+                        exampleGoal.goal,
+                        exampleGoal.emoji,
+                        exampleGoal.token,
+                        exampleGoal.amount
+                      )
+                    }
+                  />
+                ))}
+            </div>
             <div className="row">
                 <div className="col-md-6 mb-4 mb-md-0">
                     <div className="card border-dark">
@@ -129,24 +191,17 @@ const CreateGoals = () => {
                             <br />
                             <div className="form-group">
                                 <label htmlFor="eventIdInput">Give your goal an emjoi </label>
-                                <EmojiSelect onSelect={handleEmojiSelectChange} />
+                                <EmojiSelect onSelect={handleEmojiSelectChange} selectedEmoji={emoji}/>
                             </div>
                             <br/>
                             <div className="form-group">
                             <label htmlFor="depositTokenInput">What token do you want to save?</label>
-                            <select className="form-control" onChange={handleTokenSelectChange}>                                
-                                <option key={0} value={USDC_ADDRESS}>
-                                    USDC 
-                                </option>
-                                <option key={1} value={WETH_ADDRESS}>
-                                    WETH 
-                                </option>
-                            </select>
+                                <TokenSelect onSelect={handleTokenSelectChange} selectedToken={depositToken} />
                             </div>
 
                             <br />
                             <div className="form-group">
-                                <label htmlFor="eventIdInput">How much USDC are you saving for this goal?</label>
+                                <label htmlFor="eventIdInput">How much {unit} are you saving for this goal?</label>
                                 <input type="number" className="form-control" id="targetAmount" />
                             </div>
                             <br />
