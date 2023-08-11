@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useContractRead } from "wagmi";
 import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS } from "../config/constants";
-import { approve, deposit, automateDeposit, setGoal } from "../utils/ethereum";
+import { approve, deposit, automateDeposit, withdraw } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { use } from "chai";
 
 interface GoalData {
     what: string;
@@ -16,8 +15,9 @@ interface GoalData {
     targetDate: string;
     depositToken: string;
     depositTokenSymbol: string;
-    automatedDepositAmount: "",
-    automatedDepositDate: "",
+    automatedDepositAmount: string;
+    automatedDepositDate: string;
+    completed: boolean;
 };
 
 const GoalRow = ({ goalIndex }) => {
@@ -32,6 +32,7 @@ const GoalRow = ({ goalIndex }) => {
     const [isDepositLoading, setIsDepositLoading] = useState(false);
     const [isApproveLoading, setIsApproveLoading] = useState(false);
     const [isAutomateDepositLoading, setIsAutomateDepositLoading] = useState(false);
+    const [isWithdrawLoading, setIsWithdrawLoading] = useState(false);
     const [goalData, setGoalData] = useState<GoalData>({
         what: "",
         why: "",
@@ -42,6 +43,7 @@ const GoalRow = ({ goalIndex }) => {
         depositTokenSymbol: "",
         automatedDepositAmount: "",
         automatedDepositDate: "",
+        completed: false,
     });
 
     // Get Goal Data
@@ -84,8 +86,10 @@ const GoalRow = ({ goalIndex }) => {
                 depositToken: goal.data.depositToken,
                 depositTokenSymbol: depositTokenSymbol,
                 targetAmount: formatTokenAmount(goal.data[3], 18, 0),
-                targetDate: formatDate(targetDate)
+                targetDate: formatDate(targetDate),
+                completed: goal.data.complete,
             }));
+            console.log("goal.data.completed", goal.data);
         }
     }, [goal.data]);
 
@@ -184,32 +188,74 @@ const GoalRow = ({ goalIndex }) => {
         }
     }
 
+    // Handler for withdraw
+    const handleWithdraw = async () => {
+        // Try to withdraw
+        try {
+            setIsWithdrawLoading(true);
+            await withdraw(goalIndex);
+            toast.success(`Withdrew ${goalData.currentAmount} from ${goalData.what}!`);
+        } catch (error) {
+            console.log("withdraw error:", error);
+            toast.error('Error withdrawing.');
+        } finally {
+            setIsWithdrawLoading(false);
+        }
+    }
+
     return (
         <>
             <tr key={`${goalIndex}`}>
                 <td>{goalData.why} {goalData.what}</td>
                 <td>
+                    {goalData.completed ? (
+                        <span>🏆 👏</span>
+                    ) : (
                     <div className="progress">
                         <div className="progress-bar" role="progressbar" style={{ width: `${goalProgress}%` }}></div>
                     </div>
+                    )}
                 </td>
                 <td>{goalData.targetAmount} / {goalData.currentAmount} {goalData.depositTokenSymbol}</td>
                 <td>{goalData.targetDate}</td>
 
                 {/* if theres an automatedDepositAmount > 0 then display this otherwise display a link to automateDeposit */}
                 <td>
+                    {goalData.completed ? (
+                        <></>
+                    ) : (
+                        <>
                     <Link href="">
                         <button className="btn btn-outline-primary btn-sm" onClick={toggleExpansionDeposit} type="button">Deposit</button>
                     </Link>
                     &nbsp; &nbsp;
                     {goalData.automatedDepositAmount > 0 ? (
-                        <>🤖 {goalData.automatedDepositAmount} USDC on {goalData.automatedDepositDate}</>
+                        <>🤖 {goalData.automatedDepositAmount} {goalData.depositTokenSymbol} on {goalData.automatedDepositDate}</>
                     ) : (
                         <Link href="">
                             {/* a small button to automate it */}
+                            
                             <button className="btn btn-outline-primary btn-sm" onClick={toggleExpansionAutomate} type="button">Automate</button>
                         </Link>
                     )}
+                    &nbsp; &nbsp;
+                    </>
+                    )}
+                    {goalData.currentAmount == goalData.targetAmount ? (
+                        <Link href="">
+                            <button className="btn btn-outline-primary btn-sm" type="button" onClick={handleWithdraw}>
+                                { isWithdrawLoading ? (
+                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                ) : (
+                                    'Withdraw'
+                                )}
+                            </button>
+                        </Link>
+                    ) : (
+                        <></>
+                    )}
+                                        
+
                 </td>
             </tr>
             {isExpandedDeposit && (
@@ -233,12 +279,24 @@ const GoalRow = ({ goalIndex }) => {
                                     className="btn btn-outline-primary"
                                     type="button"
                                     id={`deposit-button-${goalIndex}`}
-                                    onClick={handleDeposit}>Deposit</button>
+                                    onClick={handleDeposit}>
+                                    { isDepositLoading ? (
+                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    ) : (
+                                        'Deposit'
+                                    )}
+                                    </button>
                                 <button
                                     className="btn btn-outline-success"
                                     type="button"
                                     id={`approve-button-${goalIndex}`}
-                                    onClick={handleApprove}>Approve</button>
+                                    onClick={handleApprove}>
+                                    { isApproveLoading ? (
+                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    ) : (
+                                        'Approve'
+                                    )}
+                                </button>
                             </div>
                         </div>
                     </td>
@@ -282,7 +340,13 @@ const GoalRow = ({ goalIndex }) => {
                                         className="btn btn-outline-secondary"
                                         type="button"
                                         id="button-addon2"
-                                        onClick={handleAutomateDeposit}>Automate</button>
+                                        onClick={handleAutomateDeposit}>
+                                        { isAutomateDepositLoading ? (
+                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        ) : (
+                                            'Automate'
+                                        )}
+                                        </button>
                                 </div>
                             </div>
                         </div>
