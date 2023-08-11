@@ -2,6 +2,15 @@
 
 ![Goalz Homepage](./images/goalzHomePage.png)
 
+## Base Goerli Network Deployment Addresses
+| Contract | Address |
+| -------- | ------- |
+| USD Coin (USDC) | [0xa32bF6C07D685aA29bf7479919e10E26c4987Ee7](https://goerli.basescan.org/address/0xa32bF6C07D685aA29bf7479919e10E26c4987Ee7) |
+| Wrapped Ether (WETH) | [0x6D0FE14de41aA63dfB9630C3D8fE8D0F21646464](https://goerli.basescan.org/address/0x6D0FE14de41aA63dfB9630C3D8fE8D0F21646464) |
+| Goalz | [0x5Fac14D043bddc57B1E588FB9BBb6126a7a803F5](https://goerli.basescan.org/address/0x5Fac14D043bddc57B1E588FB9BBb6126a7a803F5) |
+| Goalz USD Coin (glzUSDC) | [0xA32E905200f9e4963880ca9d7FD14Db863A877f7](https://goerli.basescan.org/address/0xA32E905200f9e4963880ca9d7FD14Db863A877f7) |
+| Goalz Wrapped Ether (glzWETH) | [0x31883628E4b307774537c62Fe28AfF858EF31B9C](https://goerli.basescan.org/address/0x31883628E4b307774537c62Fe28AfF858EF31B9C) |
+
 ## Problem: Saving is hard
 There are important things in life that we want to buy. Without savings, people either don't buy or will use credit to buy. Saving money in a single savings account can be challenging by itself. It becomes even harder when you are trying to save for multiple things at the same time within a single savings account. Tools like Mint support savings goals but are limited to one goal per one account. To make many savings goals with Mint requires making many seperate savings account. This can be done in traditional finance but it's difficult and out of reach for some people.
 

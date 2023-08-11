@@ -1,6 +1,8 @@
 const hre = require("hardhat");
 
 async function main() {
+  // Get the deployer signer
+  const [deployer] = await hre.ethers.getSigners();
 
   // Deploy ERC20Mock token
   const ERC20Mock = await hre.ethers.getContractFactory("ERC20Mock");
@@ -8,9 +10,17 @@ async function main() {
   const usdcAddress = await usdc.getAddress();
   console.log("Mock USDC deployed to:", usdcAddress);
 
+  // Mint 1000 USDC to deployer
+  await usdc.mint(await deployer.getAddress(), hre.ethers.parseEther("1000"));
+  console.log("Minted 1000 Mock USDC to deployer");
+
   const weth = await ERC20Mock.deploy("Wrapped Ether", "WETH");
   const wethAddress = await weth.getAddress();
   console.log("Mock WETH deployed to:", wethAddress);
+
+  // Mint 2 WETH to deployer
+  await weth.mint(await deployer.getAddress(), hre.ethers.parseEther("2"));
+  console.log("Minted 2 Mock WETH to deployer");
   
   // Deploy GoalzToken
   const Goalz = await hre.ethers.getContractFactory("Goalz");
