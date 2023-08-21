@@ -93,6 +93,7 @@ const CreateGoals = () => {
 
             // Check if we're also creating an automatic deposit
             if (showMonthlyDepositForm) {
+                toast.success(`Goal set! Automating deposit...`);
                 // Get the GoalCreated event to find the goalId of the created goal
                 const goalId = result.events[1].args.goalId;
                 // If so, set the monthlyDepositAmount and frequency
@@ -100,7 +101,7 @@ const CreateGoals = () => {
                 const frequency = ethers.BigNumber.from(30).mul(ethers.BigNumber.from(24).mul(ethers.BigNumber.from(60).mul(ethers.BigNumber.from(60))));
                 // Get the id of the goal just created
                 await automateDeposit(goalId, monthlyDepositAmountBigNumber, frequency);
-                toast.success(`Goal set! ${monthlyDepositAmount} will be deposited each month.`);
+                toast.success(`${monthlyDepositAmount} ${unit} will be deposited each month toward your goal.`);
 
             } else {
                 toast.success('Goal set!');
@@ -259,7 +260,11 @@ const CreateGoals = () => {
                             )}
                             <br/>
                             <button className="btn btn-primary" onClick={handleCreateGoal}>
-                                Start Saving
+                            {setGoalLoading ? (
+                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            ) : (
+                                'Start Saving'
+                            )}
                             </button>
                             <br />
                         </div>

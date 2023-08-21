@@ -29,6 +29,18 @@ export const approve = async (depositToken: string) => {
     await approvalTx.wait();
 };
 
+export const allowance = async (depositToken: string) => {
+    const provider = await getProvider();
+    const signer = await getSigner(provider);
+    const contract = new ethers.Contract(
+        depositToken,
+        ERC20_ABI,
+        signer
+    );
+    const allowance = await contract.allowance(await signer.getAddress(), GOALZ_ADDRESS);
+    return allowance;
+}
+
 export const setGoal = async (depositToken: string, what: string, why: string, targetAmount: BigNumber, targetDate: BigNumber) => {
     const provider = await getProvider();
     const signer = await getSigner(provider);
@@ -61,7 +73,7 @@ export const deposit = async (goalId: BigNumber, amount: BigNumber) => {
         GOALZ_ABI,
         signer
     );
-    const depositTx = await goalz.deposit(goalId, amount, {gasLimit: 2000000});
+    const depositTx = await goalz.deposit(goalId, amount);
     await depositTx.wait();
 };
 

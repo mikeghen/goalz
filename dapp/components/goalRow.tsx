@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useContractRead } from "wagmi";
-import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS } from "../config/constants";
+import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from "../config/constants";
 import { approve, deposit, automateDeposit, withdraw } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { use } from "chai";
 
 interface GoalData {
     what: string;
@@ -33,6 +34,7 @@ const GoalRow = ({ goalIndex }) => {
     const [isApproveLoading, setIsApproveLoading] = useState(false);
     const [isAutomateDepositLoading, setIsAutomateDepositLoading] = useState(false);
     const [isWithdrawLoading, setIsWithdrawLoading] = useState(false);
+    const [isAllowed, setIsAllowed] = useState(false);
     const [goalData, setGoalData] = useState<GoalData>({
         what: "",
         why: "",
@@ -63,6 +65,25 @@ const GoalRow = ({ goalIndex }) => {
         watch: true,
     });
 
+    const allowance = useContractRead({
+        addressOrName: goalData.depositToken,
+        contractInterface: ERC20_ABI,
+        functionName: "allowance",
+        args: [address, GOALZ_ADDRESS],
+        watch: true,
+    });
+
+    useEffect(() => {
+        console.log("allowance.data", allowance.data);
+        if (allowance.data) {
+            if (allowance.data.gt(0)) {
+                setIsAllowed(true);
+            } else {
+                setIsAllowed(false);
+            }
+        }
+    }, [allowance.data]);
+
     // ---
     // Format the goal data
     useEffect(() => {
@@ -77,15 +98,25 @@ const GoalRow = ({ goalIndex }) => {
             }
             setGoalProgress(goalProgress);
 
+            let currentAmount = '0';
+            let targetAmount = '0';
+            if(goal.data.depositToken == USDC_ADDRESS) {
+                targetAmount = formatTokenAmount(goal.data[3], 18, 0);
+                currentAmount = formatTokenAmount(goal.data[2], 18, 0);
+            } else {
+                targetAmount = formatTokenAmount(goal.data[3], 18, 2);
+                currentAmount = formatTokenAmount(goal.data[2], 18, 2);
+            }
+
             // Update the goal data state to add the goal data 
             setGoalData((prevGoalData) => ({
                 ...prevGoalData,
                 what: goal.data[0],
                 why: goal.data[1],
-                currentAmount: formatTokenAmount(goal.data[2], 18, 0),
+                currentAmount: currentAmount,
                 depositToken: goal.data.depositToken,
                 depositTokenSymbol: depositTokenSymbol,
-                targetAmount: formatTokenAmount(goal.data[3], 18, 0),
+                targetAmount: targetAmount,
                 targetDate: formatDate(targetDate),
                 completed: goal.data.complete,
             }));
@@ -209,14 +240,20 @@ const GoalRow = ({ goalIndex }) => {
                 <td>{goalData.why} {goalData.what}</td>
                 <td>
                     {goalData.completed ? (
-                        <span>🏆 👏</span>
+                        <span>🏆</span>
                     ) : (
                     <div className="progress">
                         <div className="progress-bar" role="progressbar" style={{ width: `${goalProgress}%` }}></div>
                     </div>
                     )}
                 </td>
-                <td>{goalData.targetAmount} / {goalData.currentAmount} {goalData.depositTokenSymbol}</td>
+                {/* if the goal is completed, display the completed date, otherwise display the target date */}
+                <td>{goalData.completed ? (
+                    <span>{goalData.currentAmount} {goalData.depositTokenSymbol}</span>
+                ) : (
+                    <span>{goalData.targetAmount} / {goalData.currentAmount} {goalData.depositTokenSymbol}</span>
+                )}</td>
+                
                 <td>{goalData.targetDate}</td>
 
                 {/* if theres an automatedDepositAmount > 0 then display this otherwise display a link to automateDeposit */}
@@ -275,17 +312,19 @@ const GoalRow = ({ goalIndex }) => {
                                 <span className="input-group-text">{goalData.depositTokenSymbol}</span>
                             </div>
                             <div className="btn-group" role="group">
-                                <button
-                                    className="btn btn-outline-primary"
-                                    type="button"
-                                    id={`deposit-button-${goalIndex}`}
-                                    onClick={handleDeposit}>
-                                    { isDepositLoading ? (
-                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    ) : (
-                                        'Deposit'
-                                    )}
-                                    </button>
+                                { isAllowed ? (
+                                    <button
+                                        className="btn btn-outline-primary"
+                                        type="button"
+                                        id={`deposit-button-${goalIndex}`}
+                                        onClick={handleDeposit}>
+                                        { isDepositLoading ? (
+                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        ) : (
+                                            'Deposit'
+                                        )}
+                                        </button>
+                                ) : (
                                 <button
                                     className="btn btn-outline-success"
                                     type="button"
@@ -297,6 +336,7 @@ const GoalRow = ({ goalIndex }) => {
                                         'Approve'
                                     )}
                                 </button>
+                                )}
                             </div>
                         </div>
                     </td>
@@ -321,7 +361,7 @@ const GoalRow = ({ goalIndex }) => {
                                         onChange={(e) => setAutoDepositAmount(e.target.value)}
                                         placeholder="0" />
                                     <br />
-                                    <span className="input-group-text">USDC</span>
+                                    <span className="input-group-text">{goalData.depositTokenSymbol}</span>
                                 </div>
                                 <label className="form-label" htmlFor="{`deposit-frequency-${goalIndex}`}">Frequency</label>
                                 <div className="input-group mb-3">

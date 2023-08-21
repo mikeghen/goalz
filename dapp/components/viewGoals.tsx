@@ -41,24 +41,30 @@ const ViewGoals = () => {
                     <div className="card border-dark">
                         <div className="card-header bg-secondary text-white">Your Goalz</div>
                         <div className="card-body">
-                            <div className="table-responsive">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>What</th>
-                                            <th>Progress</th>
-                                            <th></th>
-                                            <th>Target Date</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {[...Array(goalCount).keys()].reverse().map((goalIndex) => (
-                                            <GoalRow goalIndex={goalIndex} key={goalIndex} />
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            {goalCount === 0 ? (
+                                <div className="alert alert-info text-center">
+                                    You have not created any goalz yet. <a href="/createp">Create one now</a>.
+                                </div>
+                            ) : (       
+                                <div className="table-responsive">
+                                    <table className="table">
+                                        <thead>
+                                            <tr>
+                                                <th>What</th>
+                                                <th>Progress</th>
+                                                <th></th>
+                                                <th>Target Date</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {[...Array(goalCount).keys()].reverse().map((goalIndex) => (
+                                                <GoalRow goalIndex={goalIndex} key={goalIndex} />
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
