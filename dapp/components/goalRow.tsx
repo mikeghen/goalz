@@ -24,6 +24,7 @@ interface GoalData {
 const GoalRow = ({ goalIndex }) => {
 
     const { address } = useAccount();
+    const [goalId, setGoalId] = useState(0);
     const [isExpandedDeposit, setIsExpandedDeposit] = useState(false);
     const [isExpandedAutomate, setIsExpandedAutomate] = useState(false);
     const [depositAmount, setDepositAmount] = useState("");
@@ -53,9 +54,23 @@ const GoalRow = ({ goalIndex }) => {
         addressOrName: GOALZ_ADDRESS,
         contractInterface: GOALZ_ABI,
         functionName: "savingsGoals",
-        args: [goalIndex],
+        args: [goalId],
         watch: true,
     });
+
+    const goalTokenData = useContractRead({
+        addressOrName: GOALZ_ADDRESS, 
+        contractInterface: GOALZ_ABI,
+        functionName: "tokenOfOwnerByIndex",
+        args: [address, goalIndex],
+        watch: true,
+    });
+
+    useEffect(() => {
+        if (goalTokenData.data) {
+            setGoalId(goalTokenData.data.toNumber());
+        }
+    }, [goalTokenData.data]);
 
     const automatedDeposit = useContractRead({
         addressOrName: GOALZ_ADDRESS,
