@@ -12,18 +12,18 @@ import { publicProvider } from 'wagmi/providers/public'
 
 import { Chain } from 'wagmi'
  
-export const baseGoerli: Chain = {
-  id: 84_531,
-  name: 'Base Goerli',
-  network: 'baseGoerli',
+export const baseSepolia: Chain = {
+  id: 84_532,
+  name: 'Base Sepolia',
+  network: 'baseSepolia',
   nativeCurrency: {
     decimals: 18,
     name: 'Ether',
     symbol: 'ETH',
   },
   rpcUrls: {
-    public: 'https://goerli.base.org',
-    default: 'https://goerli.base.org',
+    public: 'https://sepolia.base.org',
+    default: 'https://sepolia.base.org',
   },
 } 
 
@@ -34,7 +34,7 @@ const alchemyId = NEXT_PUBLIC_ALCHEMY_ID
 const etherscanApiKey = NEXT_PUBLIC_ETHERSCAN_API_KEY
 
 const { chains, provider } = configureChains(
-  [baseGoerli],
+  [baseSepolia],
   [alchemyProvider({ apiKey: alchemyId }), publicProvider()],
 )
 const { connectors } = getDefaultWallets({
