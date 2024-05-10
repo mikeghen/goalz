@@ -1,25 +1,33 @@
-name: Hardhat Tests
-
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-
+name: Tests
 jobs:
-  test:
-    runs-on: ubuntu-latest
-
+  contract-migrations:
+    name: "Contract Migration Tests"
+    outputs:
+      session-endpoint: ${{ steps.migration-00.outputs.session-endpoint }}
     steps:
-    - uses: actions/checkout@v2
-
-    - name: Use Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: 14
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run tests
-      run: npx hardhat test
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v2
+      - run: "yarn install --frozen-lockfile --dev"
+      - run: "yarn hardhat compile"
+      - name: "Run Migration:00"
+        id: migration-00
+        uses: 721labs/hardhat-session-action@main
+        with:
+          cmd: "migration:00"
+          hardhat-directory: ./packages/contracts
+      - name: "Run Migration:01"
+        uses: 721labs/hardhat-session-action@main
+        with:
+          cmd: "migration:01"
+          session-id: ${{ steps.migration-00.outputs.session-id }}
+          hardhat-directory: ./packages/contracts
+  unit:
+    name: "Unit Tests"
+    needs: [contract-migrations]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+      - run: "yarn install --frozen-lockfile --dev"
+      - run: "mocha"
+        env:
+          CHAIN_ENDPOINT: ${{ needs.contract-migrations.outputs.session-endpoint }}
