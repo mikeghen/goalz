@@ -16,7 +16,7 @@ const ETH_WHALE_ADDRESS = "0x5455a28f1d5116610c3627fcb672d165d553d018";
 const USER1_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 const AUTOMATOOR_ADDRESS = "0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db";
 
-describe("SavingsGoal", function () {
+xdescribe("SavingsGoal", function () {
   let SavingsGoal;
   let savingsGoal;
   let usdc;

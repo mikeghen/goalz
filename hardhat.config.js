@@ -21,13 +21,13 @@ module.exports = {
     //   },
     // },
     tenderly: {
-      url: process.env.TENDERLY_NODE_URL,
-      accounts: [`0x${process.env.PRIVATE_KEY}`],
+      url: process.env.TENDERLY_NODE_URL || "",
+      accounts: process.env.PRIVATE_KEY ? [`0x${process.env.PRIVATE_KEY}`] : [],
       // 84531 is the network ID of the Tenderly Mainnet fork (Base Goerli)
     },
     baseGoerli: {
-      url: process.env.BASE_GOERLI_NODE_URL,
-      accounts: [`0x${process.env.PRIVATE_KEY}`],
+      url: process.env.BASE_GOERLI_NODE_URL || "",
+      accounts: process.env.PRIVATE_KEY ? [`0x${process.env.PRIVATE_KEY}`] : [],
       gasPrice: 1000000000,
     }
   },
