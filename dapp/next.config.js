@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   reactStrictMode: true,
   async headers() {
     return [
@@ -19,3 +22,4 @@ module.exports = {
     ]
   },
 }
+

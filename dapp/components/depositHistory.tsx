@@ -7,7 +7,7 @@ const DepositHistory = () => {
     const { address } = useAccount();
     const { data: signer } = useSigner();
 
-    const [depositEvents, setDepositEvents] = useState([]);
+    const [depositEvents, setDepositEvents] = useState([] as any);
 
     const getDepositEvents = async () => {
         const deposits = await getEvents();
@@ -33,7 +33,7 @@ const DepositHistory = () => {
     };
 
     // Format a date
-    const formatDate = (date) => {
+    const formatDate = (date: any) => {
         return date.toLocaleString('en', {
             year: 'numeric',
             month: '2-digit',
@@ -72,7 +72,7 @@ const DepositHistory = () => {
                                                 <td colSpan={3}>No deposit events yet.</td>
                                             </tr>
                                         ) : (
-                                            depositEvents.map((depositEvent, index) => (
+                                            depositEvents.map((depositEvent: any, index: number) => (
                                                 <tr key={index}>
                                                     <td>{depositEvent.date}</td>
                                                     <td>{depositEvent.goal}</td>

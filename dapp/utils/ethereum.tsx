@@ -1,11 +1,11 @@
 import { BigNumber, ethers } from 'ethers';
-import { GOALZ_ADDRESS, GOALZ_ABI, GOALZ_USD_ADDRESS, USDC_ADDRESS, ERC20_ABI } from '../config/constants'; 
+import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from '../config/constants'; 
 
 // Methods for executing transaction on Ethereum 
 
 export const getProvider = () => {
     if (typeof window.ethereum !== 'undefined') {
-        return new ethers.providers.Web3Provider(window.ethereum);
+        return new ethers.providers.Web3Provider(window.ethereum as ethers.providers.ExternalProvider);
     }
     throw new Error('Ethereum provider not found.');
 };

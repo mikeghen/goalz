@@ -16,12 +16,12 @@ interface GoalData {
     targetDate: string;
     depositToken: string;
     depositTokenSymbol: string;
-    automatedDepositAmount: string;
+    automatedDepositAmount: any;
     automatedDepositDate: string;
     completed: boolean;
 };
 
-const GoalRow = ({ goalIndex }) => {
+const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
 
     const { address } = useAccount();
     const [goalId, setGoalId] = useState(0);
@@ -126,14 +126,14 @@ const GoalRow = ({ goalIndex }) => {
             // Update the goal data state to add the goal data 
             setGoalData((prevGoalData) => ({
                 ...prevGoalData,
-                what: goal.data[0],
-                why: goal.data[1],
+                what: goal.data?.what,
+                why: goal.data?.why,
                 currentAmount: currentAmount,
-                depositToken: goal.data.depositToken,
+                depositToken: goal.data?.depositToken,
                 depositTokenSymbol: depositTokenSymbol,
                 targetAmount: targetAmount,
                 targetDate: formatDate(targetDate),
-                completed: goal.data.complete,
+                completed: goal.data?.complete,
             }));
             console.log("goal.data.completed", goal.data);
         }
@@ -149,7 +149,7 @@ const GoalRow = ({ goalIndex }) => {
                 // Update the goal data state to add the goal data 
                 setGoalData((prevGoalData) => ({
                     ...prevGoalData,
-                    automatedDepositAmount: formatTokenAmount(automatedDeposit.data.amount, 18, 0),
+                    automatedDepositAmount: formatTokenAmount(automatedDeposit.data?.amount, 18, 0),
                     automatedDepositDate: formatDate(automatedDepositDate),
                 }));
             }

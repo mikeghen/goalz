@@ -37,7 +37,7 @@ const Wallet: React.FC<{}> = () => {
     functionName: 'balanceOf',
     args: [address],
     watch: true,
-    onError(error) {
+        onError(error) {
       console.log('Error on USDC', error)
     },
   });
@@ -52,25 +52,25 @@ const Wallet: React.FC<{}> = () => {
 
   useEffect(() => {
     if (goalzUsdBalanceData.data) {
-      getGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data, 18, 2));
+      getGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data.toString(), 18, 2));
     }
   }, [goalzUsdBalanceData.data]);
 
   useEffect(() => {
     if (goalzWethBalanceData.data) {
-      getGoalzWethBalance(formatTokenAmount(goalzWethBalanceData.data, 18, 2));
+      getGoalzWethBalance(formatTokenAmount(goalzWethBalanceData.data.toString(), 18, 2));
     }
   }, [goalzWethBalanceData.data]);
 
   useEffect(() => {
     if (usdcBalanceData.data) {
-      getUsdcBalance(formatTokenAmount(usdcBalanceData.data, 18, 2));
+      getUsdcBalance(formatTokenAmount(usdcBalanceData.data.toString(), 18, 2));
     }
   }, [usdcBalanceData.data]);
 
   useEffect(() => {
     if (wethBalanceData.data) {
-      getWethBalance(formatTokenAmount(wethBalanceData.data, 18, 2));
+      getWethBalance(formatTokenAmount(wethBalanceData.data.toString(), 18, 2));
     }
   }, [wethBalanceData.data]);
 

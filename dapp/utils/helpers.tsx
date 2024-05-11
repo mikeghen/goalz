@@ -4,7 +4,7 @@ export const formatTokenAmount = (
   amount: string,
   tokenDecimals: number,
   displayDecimals: number
-) => {
+): string => {
   // Format it as a number
   let result = Number(ethers.utils.formatUnits(amount, tokenDecimals));
   // Floor it with rounding

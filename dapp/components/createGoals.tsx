@@ -4,46 +4,46 @@ import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 import { USDC_ADDRESS, WETH_ADDRESS } from '../config/constants';
 
-const EmojiSelect = ({ onSelect, selectedEmoji }) => {
-    const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟', '💻', '🚗']; // Add more emojis as needed
-  
-    return (
-      <select className="form-control" onChange={onSelect} value={selectedEmoji}>
-        <option value="">Select an emoji</option>
-        {emojis.map((emoji, index) => (
-          <option key={index} value={emoji}>
-            {emoji}
-          </option>
-        ))}
-      </select>
-    );
-  };
+const EmojiSelect = ({ onSelect, selectedEmoji }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedEmoji: string }) => {
+        const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟', '💻', '🚗']; // Add more emojis as needed
+    
+        return (
+            <select className="form-control" onChange={onSelect} value={selectedEmoji}>
+                <option value="">Select an emoji</option>
+                {emojis.map((emoji, index) => (
+                    <option key={index} value={emoji}>
+                        {emoji}
+                    </option>
+                ))}
+            </select>
+        );
+    };
 
-const TokenSelect = ({ onSelect, selectedToken }) => {
-    return (
-      <select className="form-control" onChange={onSelect} value={selectedToken}>
-        <option value={USDC_ADDRESS}>USDC</option>
-        <option value={WETH_ADDRESS}>WETH</option>
-      </select>
-    );
-  };
+const TokenSelect = ({ onSelect, selectedToken }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedToken: string }) => {
+        return (
+            <select className="form-control" onChange={onSelect} value={selectedToken}>
+                <option value={USDC_ADDRESS}>USDC</option>
+                <option value={WETH_ADDRESS}>WETH</option>
+            </select>
+        );
+    };
   
   
 
-  const ExampleGoalCard = ({ goal, emoji, token, onStart }) => {
+const ExampleGoalCard = ({ goal, emoji, token, onStart }: { goal: string, emoji: string, token: string, onStart: () => void }) => {
     return (
-      <div className="col-md-3 mb-4">
-        <div className="card ">
-          <div className="card-body d-flex flex-column align-items-center justify-content-center">
-            <p className="text-center">{`${goal} ${emoji}`}</p>
-            <button className="btn btn-outline-primary mt-2" onClick={onStart}>
-              Start
-            </button>
-          </div>
+        <div className="col-md-3 mb-4">
+            <div className="card ">
+                <div className="card-body d-flex flex-column align-items-center justify-content-center">
+                    <p className="text-center">{`${goal} ${emoji}`}</p>
+                    <button className="btn btn-outline-primary mt-2" onClick={onStart}>
+                        Start
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
     );
-  };  
+};
   
 
 const CreateGoals = () => {
@@ -115,12 +115,12 @@ const CreateGoals = () => {
 
     };
 
-    const handleEmojiSelectChange = (event) => {
+    const handleEmojiSelectChange = (event: any) => {
         const selectedValue = event.target.value;
         setEmoji(selectedValue);
     };
 
-    const handleTokenSelectChange = (event) => {
+    const handleTokenSelectChange = (event: any) => {
         const selectedValue = event.target.value;
         console.log("depositToken", selectedValue)
         if(selectedValue === USDC_ADDRESS) {
@@ -147,11 +147,11 @@ const CreateGoals = () => {
         }
     };
 
-    const handleMonthlyDepositAmountChange = (event) => {
+    const handleMonthlyDepositAmountChange = (event: any) => {
         setMonthlyDepositAmount(event.target.value);
     };
 
-    const setExampleGoal = (goal, emoji, token, amount) => {
+    const setExampleGoal = (goal:any, emoji:any, token:any, amount:any) => {
         (document.getElementById("what") as HTMLInputElement).value = goal;
         (document.getElementById("targetAmount") as HTMLInputElement).value = amount;
         setEmoji(emoji);
@@ -186,7 +186,7 @@ const CreateGoals = () => {
                         <div className="card-header bg-secondary text-white">Your Goal</div>
                         <div className="card-body">
                             <div className="form-group">
-                                <label htmlFor="eventIdInput">What's the goal?</label>
+                                <label htmlFor="eventIdInput">What is the goal?</label>
                                 <input type="text" className="form-control" id="what" />
                             </div>
                             <br />
