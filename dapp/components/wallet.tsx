@@ -37,6 +37,9 @@ const Wallet: React.FC<{}> = () => {
     functionName: 'balanceOf',
     args: [address],
     watch: true,
+    onError(error) {
+      console.log('Error on USDC', error)
+    },
   });
 
   const wethBalanceData = useContractRead({
@@ -46,9 +49,6 @@ const Wallet: React.FC<{}> = () => {
     args: [address],
     watch: true,
   });
-
-
-
 
   useEffect(() => {
     if (goalzUsdBalanceData.data) {

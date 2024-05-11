@@ -43,7 +43,7 @@ const ViewGoals = () => {
                         <div className="card-body">
                             {goalCount === 0 ? (
                                 <div className="alert alert-info text-center">
-                                    You have not created any goalz yet. <a href="/createp">Create one now</a>.
+                                    You have not created any goalz yet. <a href="/create">Create one now</a>.
                                 </div>
                             ) : (       
                                 <div className="table-responsive">
