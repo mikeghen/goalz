@@ -8,7 +8,8 @@ const { expect } = require("chai");
 // Integration testing for the base blockchain
 // Hardhat must be configured to work with a fork of the Base mainnet
 
-const USDC_ADDRESS = "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA";
+const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 // As of block 2332266
 const USDC_WHALE_ADDRESS = "0xb38A90f14b24ae81Ec0B8f1373694f5B59811D8A";
 const ETH_WHALE_ADDRESS = "0x5455a28f1d5116610c3627fcb672d165d553d018";
