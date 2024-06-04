@@ -7,9 +7,9 @@
 ### Base Sepolia Testnet 
 | Contract | Address |
 | -------- | ------- |
-| Mock USDC | [0x46CF2f301760F8B83B6eBBFedd0BC3b8358e577B](https://sepolia.basescan.org/address/0x46CF2f301760F8B83B6eBBFedd0BC3b8358e577B) |
-| Mock WETH | [0x60357BaeF1130e24ee5007D0662d0e98183DC72C](https://sepolia.basescan.org/address/0x60357BaeF1130e24ee5007D0662d0e98183DC72C) |
-| Goalz | [0x5B8001BFdbAeab8f3e0373FCCa70b5573e53314D](https://sepolia.basescan.org/address/0x5B8001BFdbAeab8f3e0373FCCa70b5573e53314D) |
+| Mock USDC | [0xB731ac0a6783D18A41156c930361D3aB62e77606](https://sepolia.basescan.org/address/0xB731ac0a6783D18A41156c930361D3aB62e77606) |
+| Mock WETH | [0xAa17431356ea6b50347dD740Bf6185A6129b7ed7](https://sepolia.basescan.org/address/0xAa17431356ea6b50347dD740Bf6185A6129b7ed7) |
+| Goalz | [0x5059dF9ab4D462D7Acc3d2057fbe56F009323591](https://sepolia.basescan.org/address/0x5059dF9ab4D462D7Acc3d2057fbe56F009323591) |
 | Goalz USD Coin (glzUSDC) | [0x27c8c8117fa4c0e0648e0e03173914bd0af9c094](https://sepolia.basescan.org/address/0x27c8c8117fa4c0e0648e0e03173914bd0af9c094) |
 | Goalz Wrapped Ether (glzWETH) | [0x0781d037c268ff1f78104425eee8aac42f58556a](https://sepolia.basescan.org/address/0x0781d037c268ff1f78104425eee8aac42f58556a) |
 

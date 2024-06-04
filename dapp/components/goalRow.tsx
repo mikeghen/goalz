@@ -278,8 +278,22 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                     ) : (
                         <>
                     <Link href="">
-                        <button className="btn btn-outline-primary btn-sm" onClick={toggleExpansionDeposit} type="button">Deposit</button>
+                        <button className="btn btn-outline-success btn-sm" onClick={toggleExpansionDeposit} type="button">Deposit</button>
                     </Link>
+                    &nbsp; &nbsp;
+                    {goalData.currentAmount != "0" ? (
+                        <Link href="">
+                            <button className="btn btn-outline-danger btn-sm" type="button" onClick={handleWithdraw}>
+                                { isWithdrawLoading ? (
+                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                ) : (
+                                    'Withdraw'
+                                )}
+                            </button>
+                        </Link>
+                    ) : (
+                        <></>
+                    )}
                     &nbsp; &nbsp;
                     {goalData.automatedDepositAmount > 0 ? (
                         <>🤖 {goalData.automatedDepositAmount} {goalData.depositTokenSymbol} on {goalData.automatedDepositDate}</>
@@ -292,21 +306,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                     )}
                     &nbsp; &nbsp;
                     </>
-                    )}
-                    {goalData.currentAmount == goalData.targetAmount ? (
-                        <Link href="">
-                            <button className="btn btn-outline-primary btn-sm" type="button" onClick={handleWithdraw}>
-                                { isWithdrawLoading ? (
-                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                ) : (
-                                    'Withdraw'
-                                )}
-                            </button>
-                        </Link>
-                    ) : (
-                        <></>
-                    )}
-                                        
+                    )}                  
 
                 </td>
             </tr>

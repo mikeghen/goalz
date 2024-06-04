@@ -3,28 +3,28 @@ const hre = require("hardhat");
 const GELATO_AUTOMATE = "0x2A6C106ae13B558BB9E2Ec64Bd2f1f7BEFF3A5E0";
 
 // Previously deployed USDC and WETH addresses
-const USDC_ADDRESS = "0x46CF2f301760F8B83B6eBBFedd0BC3b8358e577B";
-const WETH_ADDRESS = "0x60357BaeF1130e24ee5007D0662d0e98183DC72C";
+const USDC_ADDRESS = "0xB731ac0a6783D18A41156c930361D3aB62e77606";
+const WETH_ADDRESS = "0xAa17431356ea6b50347dD740Bf6185A6129b7ed7";
 
 async function main() {
   // Get the deployer signer
   const [deployer] = await hre.ethers.getSigners();
 
-  // Deploy ERC20Mock token
+  // // Deploy ERC20Mock token
   // const ERC20Mock = await hre.ethers.getContractFactory("ERC20Mock");
   // const usdc = await ERC20Mock.deploy("USD Coin", "USDC");
   // const usdcAddress = await usdc.getAddress();
-  // console.log("Mock USDC deployed to:", usdcAddress);
+  // // Sleep for 10 seconds
+  // console.log("Sleeping for 10 seconds...");
+  // await new Promise((r) => setTimeout(r, 20000));
+  
 
   // Get the USDC contract at
   const usdc = await hre.ethers.getContractAt("ERC20Mock", USDC_ADDRESS);
   const usdcAddress = await usdc.getAddress();
 
-  console.log("USDC deployed to:", usdcAddress);
+  console.log("Mock USDC deployed to:", usdcAddress);
 
-  // // Sleep for 10 seconds
-  // console.log("Sleeping for 10 seconds...");
-  // await new Promise((r) => setTimeout(r, 20000));
 
   // Mint 1000 USDC to deployer
   let tx = await usdc.mint(await deployer.getAddress(), hre.ethers.parseEther("1000"));
@@ -33,16 +33,15 @@ async function main() {
 
   // const weth = await ERC20Mock.deploy("Wrapped Ether", "WETH");
   // const wethAddress = await weth.getAddress();
-  // console.log("Mock WETH deployed to:", wethAddress);
+  // // Sleep for 10 seconds
+  // console.log("Sleeping for 10 seconds...");
+  // await new Promise((r) => setTimeout(r, 20000));
 
   // Get the WETH contract at
   const weth = await hre.ethers.getContractAt("ERC20Mock", WETH_ADDRESS);
   const wethAddress = await weth.getAddress();
+
   console.log("WETH deployed to:", wethAddress);
-  
-  // // Sleep for 10 seconds
-  // console.log("Sleeping for 10 seconds...");
-  // await new Promise((r) => setTimeout(r, 20000));
   
   // Mint 2 WETH to deployer
   tx = await weth.mint(await deployer.getAddress(), hre.ethers.parseEther("2"));

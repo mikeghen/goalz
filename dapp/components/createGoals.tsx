@@ -1,39 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { automateDeposit, setGoal } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 import { USDC_ADDRESS, WETH_ADDRESS } from '../config/constants';
 
 const EmojiSelect = ({ onSelect, selectedEmoji }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedEmoji: string }) => {
-        const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟', '💻', '🚗']; // Add more emojis as needed
-    
-        return (
-            <select className="form-control" onChange={onSelect} value={selectedEmoji}>
-                <option value="">Select an emoji</option>
-                {emojis.map((emoji, index) => (
-                    <option key={index} value={emoji}>
-                        {emoji}
-                    </option>
-                ))}
-            </select>
-        );
-    };
+    const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟', '💻', '🚗']; // Add more emojis as needed
+
+    return (
+        <select className="form-control" onChange={onSelect} value={selectedEmoji}>
+            <option value="">Select an emoji</option>
+            {emojis.map((emoji, index) => (
+                <option key={index} value={emoji}>
+                    {emoji}
+                </option>
+            ))}
+        </select>
+    );
+};
 
 const TokenSelect = ({ onSelect, selectedToken }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedToken: string }) => {
-        return (
-            <select className="form-control" onChange={onSelect} value={selectedToken}>
-                <option value={USDC_ADDRESS}>USDC</option>
-                <option value={WETH_ADDRESS}>WETH</option>
-            </select>
-        );
-    };
-  
-  
+    return (
+        <select className="form-control" onChange={onSelect} value={selectedToken}>
+            <option value={USDC_ADDRESS}>USDC</option>
+            <option value={WETH_ADDRESS}>WETH</option>
+        </select>
+    );
+};
 
 const ExampleGoalCard = ({ goal, emoji, token, onStart }: { goal: string, emoji: string, token: string, onStart: () => void }) => {
     return (
         <div className="col-md-3 mb-4">
-            <div className="card ">
+            <div className="card">
                 <div className="card-body d-flex flex-column align-items-center justify-content-center">
                     <p className="text-center">{`${goal} ${emoji}`}</p>
                     <button className="btn btn-outline-primary mt-2" onClick={onStart}>
@@ -44,27 +42,27 @@ const ExampleGoalCard = ({ goal, emoji, token, onStart }: { goal: string, emoji:
         </div>
     );
 };
-  
 
 const CreateGoals = () => {
-
-    const [setGoalLoading, setSetGoalLoading] = React.useState(false);
-    const [monthlySavings, setMonthlySavings] = React.useState("0.00");
-    const [showMonthlyDepositForm, setShowMonthlyDepositForm] = React.useState(false);
-    const [monthlyDepositAmount, setMonthlyDepositAmount] = React.useState('');
-    const [emoji, setEmoji] = React.useState('');
-    const [depositToken, setDepositToken] = React.useState(USDC_ADDRESS); // [USDC_ADDRESS, WETH_ADDRESS]
-    const [unit, setUnit] = React.useState('USDC');
-    const [what, setWhat] = React.useState('');
-    const [why, setWhy] = React.useState('');
-    const [targetAmount, setTargetAmount] = React.useState('');
+    const [setGoalLoading, setSetGoalLoading] = useState(false);
+    const [savingsAmount, setSavingsAmount] = useState("0.00");
+    const [showDepositForm, setShowDepositForm] = useState(false);
+    const [depositAmount, setDepositAmount] = useState('');
+    const [frequencyAmount, setFrequencyAmount] = useState('');
+    const [frequencyUnit, setFrequencyUnit] = useState("days"); // New state for frequency unit
+    const [emoji, setEmoji] = useState('');
+    const [depositToken, setDepositToken] = useState(USDC_ADDRESS); // [USDC_ADDRESS, WETH_ADDRESS]
+    const [unit, setUnit] = useState('USDC');
+    const [what, setWhat] = useState('');
+    const [why, setWhy] = useState('');
+    const [targetAmount, setTargetAmount] = useState('');
 
     const exampleGoals = [
         { goal: 'Save for a trip', emoji: '🏖️', token: USDC_ADDRESS, amount: '' },
         { goal: 'Save for a macbook', emoji: '💻', token: USDC_ADDRESS, amount: '' },
-        { goal: 'Save for a car', emoji: '🚗', token: USDC_ADDRESS,amount: '' },
-        { goal: 'Save 1 ETH', emoji: '💰', token: WETH_ADDRESS, amount: '1'},
-      ];
+        { goal: 'Save for a car', emoji: '🚗', token: USDC_ADDRESS, amount: '' },
+        { goal: 'Save 1 ETH', emoji: '💰', token: WETH_ADDRESS, amount: '1' },
+    ];
 
     const handleCreateGoal = async () => {
         // Creating an event will create a new stealth meta-address and save this information to a local database
@@ -74,7 +72,7 @@ const CreateGoals = () => {
         const why = emoji;
         const targetAmount = (document.getElementById("targetAmount") as HTMLInputElement).value;
         const targetDate = (document.getElementById("targetDate") as HTMLInputElement).value;
-        // Transfor the targetAmount and targetDate into the correct format
+        // Transform the targetAmount and targetDate into the correct format
         const targetAmountBigNumber = ethers.BigNumber.from(targetAmount).mul(ethers.BigNumber.from(10).pow(18));
         const targetDateUnix = ethers.BigNumber.from(
             Math.floor(Date.now() / 1000) + (Number(targetDate) * 24 * 60 * 60)
@@ -83,8 +81,7 @@ const CreateGoals = () => {
         console.log("what", what);
         console.log("why", why);
         console.log("targetAmount", targetAmountBigNumber.toString());
-        console.log("targetDate", targetDateUnix);``
-        
+        console.log("targetDate", targetDateUnix);
 
         // Try to set the goal
         try {
@@ -92,17 +89,38 @@ const CreateGoals = () => {
             let result = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix);
 
             // Check if we're also creating an automatic deposit
-            if (showMonthlyDepositForm) {
+            if (showDepositForm) {
                 toast.success(`Goal set! Automating deposit...`);
                 // Get the GoalCreated event to find the goalId of the created goal
                 const goalId = result.events[1].args.goalId;
-                // If so, set the monthlyDepositAmount and frequency
-                const monthlyDepositAmountBigNumber = ethers.BigNumber.from(monthlyDepositAmount).mul(ethers.BigNumber.from(10).pow(18));
-                const frequency = ethers.BigNumber.from(30).mul(ethers.BigNumber.from(24).mul(ethers.BigNumber.from(60).mul(ethers.BigNumber.from(60))));
-                // Get the id of the goal just created
-                await automateDeposit(goalId, monthlyDepositAmountBigNumber, frequency);
-                toast.success(`${monthlyDepositAmount} ${unit} will be deposited each month toward your goal.`);
+                // If so, set the depositAmount and frequency
+                const depositAmountBigNumber = ethers.BigNumber.from(depositAmount).mul(ethers.BigNumber.from(10).pow(18));
+                
+                // Convert the frequency based on the selected unit
+                let frequencySeconds;
+                switch (frequencyUnit) {
+                    case "minutes":
+                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(60);
+                        break;
+                    case "hours":
+                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(3600);
+                        break;
+                    case "days":
+                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(86400);
+                        break;
+                    case "weeks":
+                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(604800);
+                        break;
+                    case "months":
+                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(2592000); // Approximation
+                        break;
+                    default:
+                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(86400); // Default to days
+                }
 
+                // Get the id of the goal just created
+                await automateDeposit(goalId, depositAmountBigNumber, frequencySeconds);
+                toast.success(`${depositAmount} ${unit} will be deposited every ${frequencyAmount} ${frequencyUnit} toward your goal.`);
             } else {
                 toast.success('Goal set!');
             }
@@ -112,7 +130,6 @@ const CreateGoals = () => {
         } finally {
             setSetGoalLoading(false);
         }
-
     };
 
     const handleEmojiSelectChange = (event: any) => {
@@ -123,41 +140,45 @@ const CreateGoals = () => {
     const handleTokenSelectChange = (event: any) => {
         const selectedValue = event.target.value;
         console.log("depositToken", selectedValue)
-        if(selectedValue === USDC_ADDRESS) {
+        if (selectedValue === USDC_ADDRESS) {
             setUnit("USDC");
         }
-        if(selectedValue === WETH_ADDRESS) {
+        if (selectedValue === WETH_ADDRESS) {
             setUnit("WETH");
         }
         setDepositToken(selectedValue);
     };
 
     // Function that will project how much per month (30 days) we will need to save to reach the targetAmount
-    const calculateMonthlySavings = () => {
+    const calculateSavings = () => {
         // Get the targetAmount and targetDate from the form
         const targetAmount = (document.getElementById("targetAmount") as HTMLInputElement).value;
         const targetDate = (document.getElementById("targetDate") as HTMLInputElement).value;
         if (targetDate === "") {
-            setMonthlySavings("0.00");
+            setSavingsAmount("0.00");
         } else {
             // Calculate the monthly savings
             const dailySavings = Number(targetAmount) / Number(targetDate);
-            const monthlySavings = dailySavings * 30;
-            setMonthlySavings(monthlySavings.toFixed(2));
+            const savingsAmount = dailySavings * 30;
+            setSavingsAmount(savingsAmount.toFixed(2));
         }
     };
 
-    const handleMonthlyDepositAmountChange = (event: any) => {
-        setMonthlyDepositAmount(event.target.value);
+    const handleDepositAmountChange = (event: any) => {
+        setDepositAmount(event.target.value);
     };
 
-    const setExampleGoal = (goal:any, emoji:any, token:any, amount:any) => {
+    const handleFrequencyAmountChange = (event: any) => {
+        setFrequencyAmount(event.target.value);
+    };
+
+    const setExampleGoal = (goal: any, emoji: any, token: any, amount: any) => {
         (document.getElementById("what") as HTMLInputElement).value = goal;
         (document.getElementById("targetAmount") as HTMLInputElement).value = amount;
         setEmoji(emoji);
         setDepositToken(token);
         setUnit(token === USDC_ADDRESS ? "USDC" : "WETH");
-      };
+    };
 
     return (
         <div className="container">
@@ -165,19 +186,19 @@ const CreateGoals = () => {
             <div className="row">
                 {exampleGoals.map((exampleGoal, index) => (
                     <ExampleGoalCard
-                    key={index}
-                    goal={exampleGoal.goal}
-                    emoji={exampleGoal.emoji}
-                    token={exampleGoal.token}
-                    onStart={() =>
-                      setExampleGoal(
-                        exampleGoal.goal,
-                        exampleGoal.emoji,
-                        exampleGoal.token,
-                        exampleGoal.amount
-                      )
-                    }
-                  />
+                        key={index}
+                        goal={exampleGoal.goal}
+                        emoji={exampleGoal.emoji}
+                        token={exampleGoal.token}
+                        onStart={() =>
+                            setExampleGoal(
+                                exampleGoal.goal,
+                                exampleGoal.emoji,
+                                exampleGoal.token,
+                                exampleGoal.amount
+                            )
+                        }
+                    />
                 ))}
             </div>
             <div className="row">
@@ -191,15 +212,14 @@ const CreateGoals = () => {
                             </div>
                             <br />
                             <div className="form-group">
-                                <label htmlFor="eventIdInput">Give your goal an emjoi </label>
-                                <EmojiSelect onSelect={handleEmojiSelectChange} selectedEmoji={emoji}/>
+                                <label htmlFor="eventIdInput">Give your goal an emoji</label>
+                                <EmojiSelect onSelect={handleEmojiSelectChange} selectedEmoji={emoji} />
                             </div>
-                            <br/>
+                            <br />
                             <div className="form-group">
-                            <label htmlFor="depositTokenInput">What token do you want to save?</label>
+                                <label htmlFor="depositTokenInput">What token do you want to save?</label>
                                 <TokenSelect onSelect={handleTokenSelectChange} selectedToken={depositToken} />
                             </div>
-
                             <br />
                             <div className="form-group">
                                 <label htmlFor="eventIdInput">How much {unit} are you saving for this goal?</label>
@@ -222,13 +242,13 @@ const CreateGoals = () => {
                                         type="number"
                                         className="form-control"
                                         id="targetDate"
-                                        onChange={calculateMonthlySavings} />
+                                        onChange={calculateSavings} />
                                     <span className="input-group-text">days</span>
                                 </div>
                             </div>
                             <br />
                             <div className="alert alert-success" role="alert">
-                                You need to save <strong>{monthlySavings} {unit}</strong> per month to reach your goal.
+                                You need to save <strong>{savingsAmount} {unit}</strong> per month to reach your goal.
                             </div>
                             <br />
 
@@ -236,35 +256,60 @@ const CreateGoals = () => {
                                 <input
                                     className="form-check-input"
                                     type="checkbox"
-                                    id="monthlyDepositCheckbox"
-                                    checked={showMonthlyDepositForm}
-                                    onChange={() => setShowMonthlyDepositForm(!showMonthlyDepositForm)}
+                                    id="depositCheckbox"
+                                    checked={showDepositForm}
+                                    onChange={() => setShowDepositForm(!showDepositForm)}
                                 />
-                                <label className="form-check-label" htmlFor="monthlyDepositCheckbox">
-                                    Automatically deposit each month
+                                <label className="form-check-label" htmlFor="depositCheckbox">
+                                    Automatically deposit
                                 </label>
                             </div>
-                            {showMonthlyDepositForm && (
+                            {showDepositForm && (
                                 <div className="form-group mt-3">
-                                    <label htmlFor="monthlyDepositAmount" className="form-label">
-                                        Monthly Deposit Amount:
+                                    <label htmlFor="depositAmount" className="form-label">
+                                        Deposit Amount:
                                     </label>
                                     <input
                                         type="number"
                                         className="form-control"
-                                        id="monthlyDepositAmount"
-                                        value={monthlyDepositAmount}
-                                        onChange={handleMonthlyDepositAmountChange}
+                                        id="depositAmount"
+                                        value={depositAmount}
+                                        onChange={handleDepositAmountChange}
                                     />
+                                    <label htmlFor="frequencyAmount" className="form-label mt-3">
+                                        Frequency Amount:
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="frequencyAmount"
+                                        value={frequencyAmount}
+                                        onChange={handleFrequencyAmountChange}
+                                    />
+                                    <label htmlFor="frequencyUnit" className="form-label mt-3">
+                                        Frequency Unit:
+                                    </label>
+                                    <select
+                                        className="form-control"
+                                        id="frequencyUnit"
+                                        value={frequencyUnit}
+                                        onChange={(e) => setFrequencyUnit(e.target.value)}
+                                    >
+                                        <option value="minutes">Minutes</option>
+                                        <option value="hours">Hours</option>
+                                        <option value="days">Days</option>
+                                        <option value="weeks">Weeks</option>
+                                        <option value="months">Months</option>
+                                    </select>
                                 </div>
                             )}
-                            <br/>
+                            <br />
                             <button className="btn btn-primary" onClick={handleCreateGoal}>
-                            {setGoalLoading ? (
-                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            ) : (
-                                'Start Saving'
-                            )}
+                                {setGoalLoading ? (
+                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                ) : (
+                                    'Start Saving'
+                                )}
                             </button>
                             <br />
                         </div>
@@ -278,5 +323,3 @@ const CreateGoals = () => {
 };
 
 export default CreateGoals;
-
-
