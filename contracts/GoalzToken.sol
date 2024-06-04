@@ -18,4 +18,9 @@ contract GoalzToken is ERC20, Ownable {
     function burn(address account, uint256 amount) external onlyOwner {
         _burn(account, amount);
     }
+
+    // Disable transfers
+    function transfer(address, uint256) public pure override returns (bool) {
+        revert("Disabled");
+    }
 }
