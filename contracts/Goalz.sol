@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "./GoalzToken.sol";
 import "./IGoalzToken.sol";
 import "./gelato/AutomateTaskCreator.sol";
+import "hardhat/console.sol";
 
 contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
     using Counters for Counters.Counter;
@@ -146,13 +147,13 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         moduleData.modules[0] = Module.PROXY;
         moduleData.modules[1] = Module.TRIGGER;
         moduleData.args[0] = _proxyModuleArg();
-        moduleData.args[1] = _timeTriggerModuleArg(uint128(block.timestamp), uint128(frequency));
+        moduleData.args[1] = _timeTriggerModuleArg(uint128(block.timestamp), uint128(frequency * 1000));
 
         bytes32 taskId = _createTask(
             address(this),
             execData,
             moduleData,
-            ETH
+            address(0)
         );
 
         autoDeposit.gelatoTaskId = taskId;
@@ -176,11 +177,12 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
 
     function automatedDeposit(uint goalId) external goalExists(goalId) {
         AutomatedDeposit storage _automatedDeposit = automatedDeposits[goalId];
-        require(_automatedDeposit.amount > 0, "No automated deposit for this goal");
+        uint amount = _automatedDeposit.amount;
+        require(amount > 0, "No automated deposit for this goal");
         require(block.timestamp >= _automatedDeposit.lastDeposit + _automatedDeposit.frequency, "Deposit frequency not reached yet");
 
         SavingsGoal storage goal = savingsGoals[goalId];
-        uint amount = _automatedDeposit.amount;
+        require(goal.currentAmount + amount <= goal.targetAmount, "Automated deposit exceeds the goal target amount");
 
         _deposit(ownerOf(goalId), goal, amount);
 
