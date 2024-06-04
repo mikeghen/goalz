@@ -152,6 +152,13 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                     automatedDepositAmount: formatTokenAmount(automatedDeposit.data?.amount, 18, 0),
                     automatedDepositDate: formatDate(automatedDepositDate),
                 }));
+            } else {
+                // No automated deposit
+                setGoalData((prevGoalData) => ({
+                    ...prevGoalData,
+                    automatedDepositAmount: "",
+                    automatedDepositDate: "",
+                }));
             }
         }
     }, [automatedDeposit.data]);
@@ -271,10 +278,16 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         try {
             setIsCancelAutomateLoading(true);
             await cancelAutomatedDeposit(goalIndex);
-            toast.success(`Cancelled automated deposit for ${goalData.what}!`);
+            toast.success(`Canceled automated deposit for ${goalData.what}!`);
+            // Update the UI state
+            setGoalData((prevGoalData) => ({
+                ...prevGoalData,
+                automatedDepositAmount: "",
+                automatedDepositDate: "",
+            }));
         } catch (error) {
             console.log("cancel automate error:", error);
-            toast.error('Error cancelling automated deposit.');
+            toast.error('Error canceling automated deposit.');
         } finally {
             setIsCancelAutomateLoading(false);
         }
