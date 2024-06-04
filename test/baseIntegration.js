@@ -8,11 +8,11 @@ const { expect } = require("chai");
 // Integration testing for the base blockchain
 // Hardhat must be configured to work with a fork of the Base mainnet
 
-const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 // As of block 2332266
-const USDC_WHALE_ADDRESS = "0xb38A90f14b24ae81Ec0B8f1373694f5B59811D8A";
-const ETH_WHALE_ADDRESS = "0x5455a28f1d5116610c3627fcb672d165d553d018";
+const USDC_WHALE_ADDRESS = "0x3304e22ddaa22bcdc5fca2269b418046ae7b566a";
+const ETH_WHALE_ADDRESS = "0xcdac0d6c6c59727a65f871236188350531885c43";
 // Some address to impersonate for user1, user2, and automatoor (random)
 const USER1_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 const AUTOMATOOR_ADDRESS = "0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db";

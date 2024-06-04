@@ -33,15 +33,15 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-     "base-goerli": "PLACEHOLDER_STRING"
+     "base-sepolia": process.env.BASESCAN_API_KEY
     },
     customChains: [
       {
-        network: "base-goerli",
-        chainId: 84531,
+        network: "base-sepolia",
+        chainId: 84532,
         urls: {
-         apiURL: "https://api-goerli.basescan.org/api",
-         browserURL: "https://goerli.basescan.org"
+         apiURL: "https://api-sepolia.basescan.org/api",
+         browserURL: "https://sepolia.basescan.org"
         }
       }
     ]
