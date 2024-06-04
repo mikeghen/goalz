@@ -30,6 +30,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         bytes32 gelatoTaskId;
     }
 
+    uint256 constant CHECK_DURATION = 10 minutes * 1000; // 10 min as milliseconds
     mapping(address => GoalzToken) public goalzTokens;
     mapping(uint => SavingsGoal) public savingsGoals;
     mapping(uint => AutomatedDeposit) public automatedDeposits;
@@ -136,7 +137,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         AutomatedDeposit storage autoDeposit = automatedDeposits[goalId];
         autoDeposit.amount = amount;
         autoDeposit.frequency = frequency;
-        autoDeposit.lastDeposit = block.timestamp;
+        autoDeposit.lastDeposit = block.timestamp; 
 
         bytes memory execData = abi.encodeWithSelector(this.automatedDeposit.selector, goalId);
         ModuleData memory moduleData = ModuleData({
@@ -147,7 +148,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         moduleData.modules[0] = Module.PROXY;
         moduleData.modules[1] = Module.TRIGGER;
         moduleData.args[0] = _proxyModuleArg();
-        moduleData.args[1] = _timeTriggerModuleArg(uint128(block.timestamp), uint128(frequency * 1000));
+        moduleData.args[1] = _timeTriggerModuleArg(uint128(block.timestamp), uint128(CHECK_DURATION)); // check every minute
 
         bytes32 taskId = _createTask(
             address(this),
