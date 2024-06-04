@@ -101,7 +101,7 @@ export const automateDeposit = async (goalId: BigNumber, amount: BigNumber, freq
     await automateDepositTx.wait();
 };
 
-export const cancelAutomateDeposit = async (goalId: BigNumber) => {
+export const cancelAutomatedDeposit = async (goalId: BigNumber) => {
     const provider = await getProvider();
     const signer = await getSigner(provider);
     const goalz = new ethers.Contract(
@@ -109,8 +109,8 @@ export const cancelAutomateDeposit = async (goalId: BigNumber) => {
         GOALZ_ABI,
         signer
     );
-    const cancelAutomateDepositTx = await goalz.cancelAutomateDeposit(goalId);
-    await cancelAutomateDepositTx.wait();
+    const cancelAutomatedDepositTx = await goalz.cancelAutomatedDeposit(goalId);
+    await cancelAutomatedDepositTx.wait();
 };
 
 export const getGoalData = async (goalId: BigNumber) => {

@@ -49,9 +49,9 @@ const CreateGoals = () => {
     const [showDepositForm, setShowDepositForm] = useState(false);
     const [depositAmount, setDepositAmount] = useState('');
     const [frequencyAmount, setFrequencyAmount] = useState('');
-    const [frequencyUnit, setFrequencyUnit] = useState("days"); // New state for frequency unit
+    const [frequencyUnit, setFrequencyUnit] = useState("days");
     const [emoji, setEmoji] = useState('');
-    const [depositToken, setDepositToken] = useState(USDC_ADDRESS); // [USDC_ADDRESS, WETH_ADDRESS]
+    const [depositToken, setDepositToken] = useState(USDC_ADDRESS);
     const [unit, setUnit] = useState('USDC');
     const [what, setWhat] = useState('');
     const [why, setWhy] = useState('');
@@ -65,38 +65,29 @@ const CreateGoals = () => {
     ];
 
     const handleCreateGoal = async () => {
-        // Creating an event will create a new stealth meta-address and save this information to a local database
         console.log("Create Goal");
-        // Get the what, why, targetAmount, and targetDate from the form
         const what = (document.getElementById("what") as HTMLInputElement).value;
         const why = emoji;
         const targetAmount = (document.getElementById("targetAmount") as HTMLInputElement).value;
         const targetDate = (document.getElementById("targetDate") as HTMLInputElement).value;
-        // Transform the targetAmount and targetDate into the correct format
         const targetAmountBigNumber = ethers.BigNumber.from(targetAmount).mul(ethers.BigNumber.from(10).pow(18));
         const targetDateUnix = ethers.BigNumber.from(
             Math.floor(Date.now() / 1000) + (Number(targetDate) * 24 * 60 * 60)
         );
-        // Log the values for inspection
         console.log("what", what);
         console.log("why", why);
         console.log("targetAmount", targetAmountBigNumber.toString());
         console.log("targetDate", targetDateUnix);
 
-        // Try to set the goal
         try {
             setSetGoalLoading(true);
             let result = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix);
 
-            // Check if we're also creating an automatic deposit
             if (showDepositForm) {
                 toast.success(`Goal set! Automating deposit...`);
-                // Get the GoalCreated event to find the goalId of the created goal
                 const goalId = result.events[1].args.goalId;
-                // If so, set the depositAmount and frequency
-                const depositAmountBigNumber = ethers.BigNumber.from(depositAmount).mul(ethers.BigNumber.from(10).pow(18));
-                
-                // Convert the frequency based on the selected unit
+                const depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 18);
+
                 let frequencySeconds;
                 switch (frequencyUnit) {
                     case "minutes":
@@ -115,10 +106,9 @@ const CreateGoals = () => {
                         frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(2592000); // Approximation
                         break;
                     default:
-                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(86400); // Default to days
+                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(86400);
                 }
 
-                // Get the id of the goal just created
                 await automateDeposit(goalId, depositAmountBigNumber, frequencySeconds);
                 toast.success(`${depositAmount} ${unit} will be deposited every ${frequencyAmount} ${frequencyUnit} toward your goal.`);
             } else {
@@ -149,15 +139,12 @@ const CreateGoals = () => {
         setDepositToken(selectedValue);
     };
 
-    // Function that will project how much per month (30 days) we will need to save to reach the targetAmount
     const calculateSavings = () => {
-        // Get the targetAmount and targetDate from the form
         const targetAmount = (document.getElementById("targetAmount") as HTMLInputElement).value;
         const targetDate = (document.getElementById("targetDate") as HTMLInputElement).value;
         if (targetDate === "") {
             setSavingsAmount("0.00");
         } else {
-            // Calculate the monthly savings
             const dailySavings = Number(targetAmount) / Number(targetDate);
             const savingsAmount = dailySavings * 30;
             setSavingsAmount(savingsAmount.toFixed(2));
@@ -182,7 +169,6 @@ const CreateGoals = () => {
 
     return (
         <div className="container">
-            {/* Row with example goal cards */}
             <div className="row">
                 {exampleGoals.map((exampleGoal, index) => (
                     <ExampleGoalCard
@@ -251,7 +237,6 @@ const CreateGoals = () => {
                                 You need to save <strong>{savingsAmount} {unit}</strong> per month to reach your goal.
                             </div>
                             <br />
-
                             <div className="form-check">
                                 <input
                                     className="form-check-input"
@@ -266,41 +251,42 @@ const CreateGoals = () => {
                             </div>
                             {showDepositForm && (
                                 <div className="form-group mt-3">
-                                    <label htmlFor="depositAmount" className="form-label">
-                                        Deposit Amount:
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        id="depositAmount"
-                                        value={depositAmount}
-                                        onChange={handleDepositAmountChange}
-                                    />
-                                    <label htmlFor="frequencyAmount" className="form-label mt-3">
-                                        Frequency Amount:
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        id="frequencyAmount"
-                                        value={frequencyAmount}
-                                        onChange={handleFrequencyAmountChange}
-                                    />
-                                    <label htmlFor="frequencyUnit" className="form-label mt-3">
-                                        Frequency Unit:
-                                    </label>
-                                    <select
-                                        className="form-control"
-                                        id="frequencyUnit"
-                                        value={frequencyUnit}
-                                        onChange={(e) => setFrequencyUnit(e.target.value)}
-                                    >
-                                        <option value="minutes">Minutes</option>
-                                        <option value="hours">Hours</option>
-                                        <option value="days">Days</option>
-                                        <option value="weeks">Weeks</option>
-                                        <option value="months">Months</option>
-                                    </select>
+                                    <strong>Automate Deposit</strong>
+                                    <div className="form-group">
+                                        <label className="form-label" htmlFor={`auto-deposit-amount`}>Deposit {depositAmount} {unit} every {frequencyAmount} {frequencyUnit} </label>
+                                        <div className="input-group mb-3">
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                id={`auto-deposit-amount`}
+                                                value={depositAmount}
+                                                onChange={handleDepositAmountChange}
+                                                placeholder="0" />
+                                            <span className="input-group-text">{unit}</span>
+                                        </div>
+                                        <div className="input-group mb-3">
+                                            <input
+                                                width={100}
+                                                type="number"
+                                                className="form-control"
+                                                id={`deposit-frequency`}
+                                                value={frequencyAmount}
+                                                onChange={handleFrequencyAmountChange}
+                                                placeholder="0" />
+                                            <select
+                                                className="form-select"
+                                                id={`frequency-unit`}
+                                                value={frequencyUnit}
+                                                onChange={(e) => setFrequencyUnit(e.target.value)}
+                                            >
+                                                <option value="minutes">Minutes</option>
+                                                <option value="hours">Hours</option>
+                                                <option value="days">Days</option>
+                                                <option value="weeks">Weeks</option>
+                                                <option value="months">Months</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                             <br />
@@ -313,7 +299,6 @@ const CreateGoals = () => {
                             </button>
                             <br />
                         </div>
-
                     </div>
                 </div>
             </div>
