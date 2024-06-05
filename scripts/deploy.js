@@ -10,18 +10,18 @@ async function main() {
   // Get the deployer signer
   const [deployer] = await hre.ethers.getSigners();
 
-  // // Deploy ERC20Mock token
-  // const ERC20Mock = await hre.ethers.getContractFactory("ERC20Mock");
-  // const usdc = await ERC20Mock.deploy("USD Coin", "USDC");
-  // const usdcAddress = await usdc.getAddress();
-  // // Sleep for 10 seconds
-  // console.log("Sleeping for 10 seconds...");
-  // await new Promise((r) => setTimeout(r, 20000));
+  // Deploy ERC20Mock token
+  const ERC20Mock = await hre.ethers.getContractFactory("ERC20Mock");
+  const usdc = await ERC20Mock.deploy("USD Coin", "USDC");
+  const usdcAddress = await usdc.getAddress();
+  // Sleep for 10 seconds
+  console.log("Sleeping for 10 seconds...");
+  await new Promise((r) => setTimeout(r, 20000));
   
 
-  // Get the USDC contract at
-  const usdc = await hre.ethers.getContractAt("ERC20Mock", USDC_ADDRESS);
-  const usdcAddress = await usdc.getAddress();
+  // // Get the USDC contract at
+  // const usdc = await hre.ethers.getContractAt("ERC20Mock", USDC_ADDRESS);
+  // const usdcAddress = await usdc.getAddress();
 
   console.log("Mock USDC deployed to:", usdcAddress);
 
@@ -31,15 +31,15 @@ async function main() {
   await tx.wait();
   console.log("Minted 1000 Mock USDC to deployer");
 
-  // const weth = await ERC20Mock.deploy("Wrapped Ether", "WETH");
-  // const wethAddress = await weth.getAddress();
-  // // Sleep for 10 seconds
-  // console.log("Sleeping for 10 seconds...");
-  // await new Promise((r) => setTimeout(r, 20000));
-
-  // Get the WETH contract at
-  const weth = await hre.ethers.getContractAt("ERC20Mock", WETH_ADDRESS);
+  const weth = await ERC20Mock.deploy("Wrapped Ether", "WETH");
   const wethAddress = await weth.getAddress();
+  // Sleep for 10 seconds
+  console.log("Sleeping for 10 seconds...");
+  await new Promise((r) => setTimeout(r, 20000));
+
+  // // Get the WETH contract at
+  // const weth = await hre.ethers.getContractAt("ERC20Mock", WETH_ADDRESS);
+  // const wethAddress = await weth.getAddress();
 
   console.log("WETH deployed to:", wethAddress);
   
