@@ -52,7 +52,7 @@ const Wallet: React.FC<{}> = () => {
 
   useEffect(() => {
     if (goalzUsdBalanceData.data) {
-      getGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data.toString(), 18, 2));
+      getGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data.toString(), 6, 2));
     }
   }, [goalzUsdBalanceData.data]);
 
@@ -64,7 +64,7 @@ const Wallet: React.FC<{}> = () => {
 
   useEffect(() => {
     if (usdcBalanceData.data) {
-      getUsdcBalance(formatTokenAmount(usdcBalanceData.data.toString(), 18, 2));
+      getUsdcBalance(formatTokenAmount(usdcBalanceData.data.toString(), 6, 2));
     }
   }, [usdcBalanceData.data]);
 

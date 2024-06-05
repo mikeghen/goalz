@@ -23,13 +23,17 @@ module.exports = {
     tenderly: {
       url: process.env.TENDERLY_NODE_URL || "",
       accounts: process.env.PRIVATE_KEY ? [`0x${process.env.PRIVATE_KEY}`] : [],
-      // 84531 is the network ID of the Tenderly Mainnet fork (Base Goerli)
+      chainId: process.env.TENDERLY_CHAIN_ID ? parseInt(process.env.TENDERLY_CHAIN_ID) : 1,
     },
     baseSepolia: {
       url: process.env.BASE_SEPOLIA_NODE_URL || "",
       accounts: process.env.PRIVATE_KEY ? [`0x${process.env.PRIVATE_KEY}`] : [],
       gasPrice: 1000000000,
-    }
+    },
+    base: {
+      url: process.env.BASE_NODE_URL || "",
+      accounts: process.env.PRIVATE_KEY ? [`0x${process.env.PRIVATE_KEY}`] : [],
+    },
   },
   etherscan: {
     apiKey: {

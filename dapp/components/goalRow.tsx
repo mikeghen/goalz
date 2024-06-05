@@ -115,12 +115,14 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
 
             let currentAmount = '0';
             let targetAmount = '0';
+            let decimals = 18;
             if (goal.data.depositToken == USDC_ADDRESS) {
-                targetAmount = formatTokenAmount(goal.data[3], 18, 0);
-                currentAmount = formatTokenAmount(goal.data[2], 18, 0);
+                decimals = 6;
+                targetAmount = formatTokenAmount(goal.data[3], decimals, 0);
+                currentAmount = formatTokenAmount(goal.data[2], decimals, 0);
             } else {
-                targetAmount = formatTokenAmount(goal.data[3], 18, 2);
-                currentAmount = formatTokenAmount(goal.data[2], 18, 2);
+                targetAmount = formatTokenAmount(goal.data[3], decimals, 3);
+                currentAmount = formatTokenAmount(goal.data[2], decimals, 3);
             }
 
             // Update the goal data state to add the goal data
@@ -146,10 +148,15 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                 const nextDepositTimestamp = automatedDeposit.data.lastDeposit.add(automatedDeposit.data.frequency).mul(1000);
                 const automatedDepositDate = new Date(nextDepositTimestamp.toNumber());
 
+                let decimals = 18;
+                if (goalData.depositToken == USDC_ADDRESS) {
+                    decimals = 6;
+                }
+
                 // Update the goal data state to add the goal data
                 setGoalData((prevGoalData) => ({
                     ...prevGoalData,
-                    automatedDepositAmount: formatTokenAmount(automatedDeposit.data?.amount, 18, 0),
+                    automatedDepositAmount: formatTokenAmount(automatedDeposit.data?.amount, 6, 0),
                     automatedDepositDate: formatDate(automatedDepositDate),
                 }));
             } else {
@@ -191,7 +198,11 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         // Try to make a deposit to this goalIndex
         try {
             setIsDepositLoading(true);
-            await deposit(goalIndex, ethers.utils.parseUnits(amount, 18));
+            if(goalData.depositToken == USDC_ADDRESS) {
+                await deposit(goalIndex, ethers.utils.parseUnits(amount, 6));
+            } else {
+                await deposit(goalIndex, ethers.utils.parseUnits(amount, 18));
+            }
             toast.success(`Deposited ${amount} toward ${goalData.what}!`);
         } catch (error) {
             console.log("deposit error:", error);

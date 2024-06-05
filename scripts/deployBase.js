@@ -11,18 +11,9 @@ async function main() {
 
   // Deploy GoalzToken
   const Goalz = await hre.ethers.getContractFactory("Goalz");
-  const goalz = await Goalz.deploy([USDC_ADDRESS, wethAddress]);
+  const goalz = await Goalz.deploy([USDC_ADDRESS, WETH_ADDRESS], GELATO_AUTOMATE);
   const goalzAddress = await goalz.getAddress();
   console.log("Goalz deployed to:", goalzAddress);
-
-  // Sleep for 10 seconds
-  console.log("Sleeping for 10 seconds...");
-
-  const glzUSDCAddress = await goalz.goalzTokens(USDC_ADDRESS);
-  console.log("Goalz USDC deployed to:", glzUSDCAddress);
-
-  const glzWETHAddress = await goalz.goalzTokens(WETH_ADDRESS);
-  console.log("Goalz WETH deployed to:", glzWETHAddress);
 
 }
 

@@ -70,7 +70,11 @@ const CreateGoals = () => {
         const why = emoji;
         const targetAmount = (document.getElementById("targetAmount") as HTMLInputElement).value;
         const targetDate = (document.getElementById("targetDate") as HTMLInputElement).value;
-        const targetAmountBigNumber = ethers.BigNumber.from(targetAmount).mul(ethers.BigNumber.from(10).pow(18));
+        let decimals = 18;
+        if (depositToken === USDC_ADDRESS) {
+            decimals = 6;
+        }
+        const targetAmountBigNumber = ethers.BigNumber.from(targetAmount).mul(ethers.BigNumber.from(10).pow(decimals));
         const targetDateUnix = ethers.BigNumber.from(
             Math.floor(Date.now() / 1000) + (Number(targetDate) * 24 * 60 * 60)
         );
@@ -85,8 +89,13 @@ const CreateGoals = () => {
 
             if (showDepositForm) {
                 toast.success(`Goal set! Automating deposit...`);
+                let depositAmountBigNumber;
                 const goalId = result.events[1].args.goalId;
-                const depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 18);
+                if (depositToken === USDC_ADDRESS) {
+                    depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 6);
+                } else {
+                    depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 18);
+                }
 
                 let frequencySeconds;
                 switch (frequencyUnit) {

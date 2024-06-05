@@ -27,6 +27,21 @@ export const baseSepolia: Chain = {
   },
 } 
 
+export const base: Chain = {
+  id: 8_453,
+  name: 'Base',
+  network: 'base',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    public: 'https://mainnet.base.org',
+    default: 'https://mainnet.base.org',
+  },
+} 
+
 import config from '../config/env-vars'
 const { NEXT_PUBLIC_ALCHEMY_ID, NEXT_PUBLIC_INFURA_ID, NEXT_PUBLIC_ETHERSCAN_API_KEY } = config
 
@@ -34,7 +49,7 @@ const alchemyId = NEXT_PUBLIC_ALCHEMY_ID
 const etherscanApiKey = NEXT_PUBLIC_ETHERSCAN_API_KEY
 
 const { chains, provider } = configureChains(
-  [baseSepolia],
+  [base, baseSepolia],
   [alchemyProvider({ apiKey: alchemyId }), publicProvider()],
 )
 const { connectors } = getDefaultWallets({

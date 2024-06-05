@@ -27,8 +27,7 @@ const ViewGoals = () => {
 
     useEffect(() => {
         if(userGoalzCount.data) {
-            console.log("userGoalzCount.data", userGoalzCount.data.toNumber());
-            setGoalCount(userGoalzCount.data.toNumber());
+            setGoalCount(ethers.BigNumber.from(userGoalzCount.data.toString()).toNumber());
         } else {
             setGoalCount(0);
         }
