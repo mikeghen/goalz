@@ -257,7 +257,11 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         // Try to automate the deposit
         try {
             setIsAutomateDepositLoading(true);
-            await automateDeposit(goalIndex, ethers.utils.parseUnits(autoDepositAmount, 18), frequencySeconds);
+            let decimals = 18;
+            if (goalData.depositToken == USDC_ADDRESS) {
+                decimals = 6;
+            }
+            await automateDeposit(goalIndex, ethers.utils.parseUnits(autoDepositAmount, decimals), frequencySeconds);
             toast.success(`Automated deposit of ${autoDepositAmount} every ${autoDepositFrequency} ${frequencyUnit}.`);
         } catch (error) {
             console.log("automateDeposit error:", error);
@@ -346,7 +350,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                                 <></>
                             )}
                             &nbsp; &nbsp;
-                            {goalData.automatedDepositAmount > 0 ? (
+                            {goalData.automatedDepositAmount.toString() != "" ? (
                                 <>
                                     <Link href="">
                                         <button className="btn btn-outline-warning btn-sm" onClick={handleCancelAutomate} type="button">
