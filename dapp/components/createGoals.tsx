@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { automateDeposit, setGoal } from '../utils/ethereum';
+import React, { useState, useEffect } from 'react';
+import { automateDeposit, setGoal, approve } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
-import { USDC_ADDRESS, WETH_ADDRESS } from '../config/constants';
+import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI } from '../config/constants';
+import { useAccount, useContractRead } from 'wagmi';
 
 const EmojiSelect = ({ onSelect, selectedEmoji }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedEmoji: string }) => {
     const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟', '💻', '🚗']; // Add more emojis as needed
@@ -44,7 +45,9 @@ const ExampleGoalCard = ({ goal, emoji, token, onStart }: { goal: string, emoji:
 };
 
 const CreateGoals = () => {
+    const { address } = useAccount();
     const [setGoalLoading, setSetGoalLoading] = useState(false);
+    const [approveLoading, setApproveLoading] = useState(false); // Add loading state for Approve button
     const [savingsAmount, setSavingsAmount] = useState("0.00");
     const [showDepositForm, setShowDepositForm] = useState(false);
     const [depositAmount, setDepositAmount] = useState('');
@@ -56,6 +59,15 @@ const CreateGoals = () => {
     const [what, setWhat] = useState('');
     const [why, setWhy] = useState('');
     const [targetAmount, setTargetAmount] = useState('');
+    const [isApproved, setIsApproved] = useState(false);
+
+    const allowance = useContractRead({
+        addressOrName: depositToken,
+        contractInterface: ERC20_ABI,
+        functionName: "allowance",
+        args: [address, GOALZ_ADDRESS],
+        watch: true,
+    });
 
     const exampleGoals = [
         { goal: 'Save for a trip', emoji: '🏖️', token: USDC_ADDRESS, amount: '' },
@@ -63,6 +75,14 @@ const CreateGoals = () => {
         { goal: 'Save for a car', emoji: '🚗', token: USDC_ADDRESS, amount: '' },
         { goal: 'Save 1 ETH', emoji: '💰', token: WETH_ADDRESS, amount: '1' },
     ];
+
+    useEffect(() => {
+        if (allowance.data && allowance.data.gte(ethers.constants.MaxUint256.div(2))) {
+            setIsApproved(true);
+        } else {
+            setIsApproved(false);
+        }
+    }, [allowance.data]);
 
     const handleCreateGoal = async () => {
         console.log("Create Goal");
@@ -87,7 +107,7 @@ const CreateGoals = () => {
             setSetGoalLoading(true);
             let result = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix);
 
-            if (showDepositForm) {
+            if (showDepositForm && isApproved) {
                 toast.success(`Goal set! Automating deposit...`);
                 let depositAmountBigNumber;
                 const goalId = result.events[1].args.goalId;
@@ -128,6 +148,20 @@ const CreateGoals = () => {
             console.log("setGoal error:", error);
         } finally {
             setSetGoalLoading(false);
+        }
+    };
+
+    const handleApprove = async () => {
+        try {
+            setApproveLoading(true); // Start loading
+            await approve(depositToken, GOALZ_ADDRESS, ethers.constants.MaxUint256);
+            toast.success('Approved contract to spend tokens.');
+            setIsApproved(true);
+        } catch (error) {
+            toast.error('Error approving contract.');
+            console.log("approve error:", error);
+        } finally {
+            setApproveLoading(false); // Stop loading
         }
     };
 
@@ -260,46 +294,61 @@ const CreateGoals = () => {
                             </div>
                             {showDepositForm && (
                                 <div className="form-group mt-3">
-                                    <strong>Automate Deposit</strong>
-                                    <div className="form-group">
-                                        <label className="form-label" htmlFor={`auto-deposit-amount`}>Deposit {depositAmount} {unit} every {frequencyAmount} {frequencyUnit} </label>
-                                        <div className="input-group mb-3">
-                                            <input
-                                                type="number"
-                                                className="form-control"
-                                                id={`auto-deposit-amount`}
-                                                value={depositAmount}
-                                                onChange={handleDepositAmountChange}
-                                                placeholder="0" />
-                                            <span className="input-group-text">{unit}</span>
+                                    {!isApproved ? (
+                                        <>
+                                            <p className="text-primary"><strong>Please approve Goalz.</strong> Goalz Automation transfers {unit} from your wallet to this goal using Gelato.</p>
+                                            <button className="btn btn-outline-primary" onClick={handleApprove} disabled={approveLoading}>
+                                                {approveLoading ? (
+                                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                ) : (
+                                                    'Approve'
+                                                )}
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div>
+                                            <strong>Automate Deposit</strong>
+                                            <div className="form-group">
+                                                <label className="form-label" htmlFor={`auto-deposit-amount`}>Deposit {depositAmount} {unit} every {frequencyAmount} {frequencyUnit} </label>
+                                                <div className="input-group mb-3">
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        id={`auto-deposit-amount`}
+                                                        value={depositAmount}
+                                                        onChange={handleDepositAmountChange}
+                                                        placeholder="0" />
+                                                    <span className="input-group-text">{unit}</span>
+                                                </div>
+                                                <div className="input-group mb-3">
+                                                    <input
+                                                        width={100}
+                                                        type="number"
+                                                        className="form-control"
+                                                        id={`deposit-frequency`}
+                                                        value={frequencyAmount}
+                                                        onChange={handleFrequencyAmountChange}
+                                                        placeholder="0" />
+                                                    <select
+                                                        className="form-select"
+                                                        id={`frequency-unit`}
+                                                        value={frequencyUnit}
+                                                        onChange={(e) => setFrequencyUnit(e.target.value)}
+                                                    >
+                                                        <option value="minutes">Minutes</option>
+                                                        <option value="hours">Hours</option>
+                                                        <option value="days">Days</option>
+                                                        <option value="weeks">Weeks</option>
+                                                        <option value="months">Months</option>
+                                                    </select>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="input-group mb-3">
-                                            <input
-                                                width={100}
-                                                type="number"
-                                                className="form-control"
-                                                id={`deposit-frequency`}
-                                                value={frequencyAmount}
-                                                onChange={handleFrequencyAmountChange}
-                                                placeholder="0" />
-                                            <select
-                                                className="form-select"
-                                                id={`frequency-unit`}
-                                                value={frequencyUnit}
-                                                onChange={(e) => setFrequencyUnit(e.target.value)}
-                                            >
-                                                <option value="minutes">Minutes</option>
-                                                <option value="hours">Hours</option>
-                                                <option value="days">Days</option>
-                                                <option value="weeks">Weeks</option>
-                                                <option value="months">Months</option>
-                                            </select>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             )}
                             <br />
-                            <button className="btn btn-primary" onClick={handleCreateGoal}>
+                            <button className="btn btn-primary" onClick={handleCreateGoal} disabled={showDepositForm && !isApproved}>
                                 {setGoalLoading ? (
                                     <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 ) : (
