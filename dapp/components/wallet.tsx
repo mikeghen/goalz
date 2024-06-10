@@ -84,10 +84,7 @@ const Wallet: React.FC<{}> = () => {
       <div className="row">
         <div className="col-md-6 mb-4 mb-md-0">
           <h1 className="m-auto text-center md:mt-8  font-extrabold">
-            Welcome back to your <br />
-            <a href="https://github.com/iMuzz/web3-starter" target="_blank" rel="noreferrer" className="rotating-hue">
               🏆 Goalz
-            </a>
           </h1>
           <div className="d-flex justify-content-center mt-3">
             <Link href="/create">
