@@ -154,7 +154,7 @@ const CreateGoals = () => {
     const handleApprove = async () => {
         try {
             setApproveLoading(true); // Start loading
-            await approve(depositToken, GOALZ_ADDRESS, ethers.constants.MaxUint256);
+            await approve(depositToken);
             toast.success('Approved contract to spend tokens.');
             setIsApproved(true);
         } catch (error) {
