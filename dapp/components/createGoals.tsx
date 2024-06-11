@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { automateDeposit, setGoal, approve } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
-import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI } from '../config/constants';
-import { useAccount, useContractRead } from 'wagmi';
+import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI, GOALZ_USDC_ADDRESS } from '../config/constants';
+import { useAccount, useReadContract } from 'wagmi';
 
 const EmojiSelect = ({ onSelect, selectedEmoji }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedEmoji: string }) => {
     const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟', '💻', '🚗']; // Add more emojis as needed
@@ -61,12 +61,11 @@ const CreateGoals = () => {
     const [targetAmount, setTargetAmount] = useState('');
     const [isApproved, setIsApproved] = useState(false);
 
-    const allowance = useContractRead({
-        addressOrName: depositToken,
-        contractInterface: ERC20_ABI,
+    const allowance = useReadContract({
+        address: USDC_ADDRESS,
+        abi: ERC20_ABI,
         functionName: "allowance",
         args: [address, GOALZ_ADDRESS],
-        watch: true,
     });
 
     const exampleGoals = [
