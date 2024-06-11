@@ -1,83 +1,63 @@
 import { useState, useEffect } from 'react';
-import { useAccount, useContractRead, useSigner } from "wagmi";
+import { useAccount, useReadContract, useBlockNumber } from "wagmi";
 import { GOALZ_USDC_ADDRESS, GOALZ_WETH_ADDRESS, USDC_ADDRESS, WETH_ADDRESS, ERC20_ABI } from '../config/constants';
 import { formatTokenAmount } from '../utils/helpers';
-import Link from "next/link"; // Import the Link component from Next.js
-import { use } from 'chai';
-
+import Link from "next/link";
+import { useQueryClient } from '@tanstack/react-query';
 
 const Wallet: React.FC<{}> = () => {
-
   const { address } = useAccount();
+  const queryClient = useQueryClient();
+  const { data: blockNumber } = useBlockNumber({ watch: true });
 
-  const [goalzUsdBalance, getGoalzUsdBalance] = useState("0.00");
-  const [goalzWethBalance, getGoalzWethBalance] = useState("0.00");
-  const [usdcBalance, getUsdcBalance] = useState("0.00");
-  const [wethBalance, getWethBalance] = useState("0.00");
+  const [goalzUsdBalance, setGoalzUsdBalance] = useState("0.00");
+  const [goalzWethBalance, setGoalzWethBalance] = useState("0.00");
+  const [usdcBalance, setUsdcBalance] = useState("0.00");
+  const [wethBalance, setWethBalance] = useState("0.00");
 
-  const goalzUsdBalanceData = useContractRead({
-    addressOrName: GOALZ_USDC_ADDRESS,
-    contractInterface: ERC20_ABI,
+  const goalzUsdBalanceData = useReadContract({
+    address: GOALZ_USDC_ADDRESS,
+    abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [address],
-    watch: true,
   });
 
-  const goalzWethBalanceData = useContractRead({
-    addressOrName: GOALZ_WETH_ADDRESS,
-    contractInterface: ERC20_ABI,
+  const goalzWethBalanceData = useReadContract({
+    address: GOALZ_WETH_ADDRESS,
+    abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [address],
-    watch: true,
   });
 
-  const usdcBalanceData = useContractRead({
-    addressOrName: USDC_ADDRESS,
-    contractInterface: ERC20_ABI,
+  const usdcBalanceData = useReadContract({
+    address: USDC_ADDRESS,
+    abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [address],
-    watch: true,
-        onError(error) {
-      console.log('Error on USDC', error)
-    },
+
   });
 
-  const wethBalanceData = useContractRead({
-    addressOrName: WETH_ADDRESS,
-    contractInterface: ERC20_ABI,
+  const wethBalanceData = useReadContract({
+    address: WETH_ADDRESS,
+    abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [address],
-    watch: true,
   });
 
   useEffect(() => {
     if (goalzUsdBalanceData.data) {
-      getGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data.toString(), 6, 2));
+      setGoalzUsdBalance(formatTokenAmount(goalzUsdBalanceData.data.toString(), 6, 2));
     }
-  }, [goalzUsdBalanceData.data]);
-
-  useEffect(() => {
     if (goalzWethBalanceData.data) {
-      getGoalzWethBalance(formatTokenAmount(goalzWethBalanceData.data.toString(), 18, 2));
+      setGoalzWethBalance(formatTokenAmount(goalzWethBalanceData.data.toString(), 18, 2));
     }
-  }, [goalzWethBalanceData.data]);
-
-  useEffect(() => {
     if (usdcBalanceData.data) {
-      getUsdcBalance(formatTokenAmount(usdcBalanceData.data.toString(), 6, 2));
+      setUsdcBalance(formatTokenAmount(usdcBalanceData.data.toString(), 6, 2));
     }
-  }, [usdcBalanceData.data]);
-
-  useEffect(() => {
     if (wethBalanceData.data) {
-      getWethBalance(formatTokenAmount(wethBalanceData.data.toString(), 18, 2));
+      setWethBalance(formatTokenAmount(wethBalanceData.data.toString(), 18, 2));
     }
-  }, [wethBalanceData.data]);
-
-  // Function to handle adding a new goal row
-  const handleAddNewGoalRow = () => {
-
-  };
+  }, [goalzUsdBalanceData.data, goalzWethBalanceData.data, usdcBalanceData.data, wethBalanceData.data, blockNumber]);
 
   return (
     <div className="container">

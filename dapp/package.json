@@ -18,9 +18,12 @@
     "@nomiclabs/hardhat-ethers": "^2.1.0",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@openzeppelin/contracts": "^4.7.2",
-    "@rainbow-me/rainbowkit": "^0.4.5",
+    "@rainbow-me/rainbowkit": "^2.1.2",
     "@tailwindcss/forms": "^0.5.2",
+    "@tanstack/react-query": "^5.40.1",
     "@types/react-modal": "^3.13.1",
+    "@wagmi/connectors": "^5.0.10",
+    "@wagmi/core": "^2.10.5",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.8",
     "bootstrap": "^5.3.0",
@@ -39,7 +42,8 @@
     "react-modal": "^3.16.1",
     "tailwindcss": "^3.1.8",
     "unstated-next": "^1.1.0",
-    "wagmi": "^0.6.2",
+    "viem": "2.x",
+    "wagmi": "^2.9.11",
     "yarn": "^1.22.19"
   },
   "devDependencies": {

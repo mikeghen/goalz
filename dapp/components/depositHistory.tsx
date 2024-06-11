@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useAccount, useSigner } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { getEvents, getGoalData } from '../utils/ethereum';
 import { formatTokenAmount } from '../utils/helpers';
 
 const DepositHistory = () => {
     const { address } = useAccount();
-    const { data: signer } = useSigner();
 
     const [depositEvents, setDepositEvents] = useState([] as any);
 
@@ -44,10 +43,10 @@ const DepositHistory = () => {
     };
 
     useEffect(() => {
-        if (address && signer) {
+        if (address) {
             getDepositEvents();
         }
-    }, [address, signer]);
+    }, [address]);
 
     return (
         <div className="container">
