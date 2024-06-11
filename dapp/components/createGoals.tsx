@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { automateDeposit, setGoal, approve } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
-import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI, GOALZ_USDC_ADDRESS } from '../config/constants';
+import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI } from '../config/constants';
 import { useAccount, useReadContract } from 'wagmi';
+import { type UseReadContractParameters } from 'wagmi'
+import { Address } from 'viem';
 
 const EmojiSelect = ({ onSelect, selectedEmoji }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedEmoji: string }) => {
     const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟', '💻', '🚗']; // Add more emojis as needed
@@ -54,7 +56,7 @@ const CreateGoals = () => {
     const [frequencyAmount, setFrequencyAmount] = useState('');
     const [frequencyUnit, setFrequencyUnit] = useState("days");
     const [emoji, setEmoji] = useState('');
-    const [depositToken, setDepositToken] = useState(USDC_ADDRESS);
+    const [depositToken, setDepositToken] = useState<Address>(USDC_ADDRESS);
     const [unit, setUnit] = useState('USDC');
     const [what, setWhat] = useState('');
     const [why, setWhy] = useState('');
@@ -62,7 +64,7 @@ const CreateGoals = () => {
     const [isApproved, setIsApproved] = useState(false);
 
     const allowance = useReadContract({
-        address: USDC_ADDRESS,
+        address: depositToken,
         abi: ERC20_ABI,
         functionName: "allowance",
         args: [address, GOALZ_ADDRESS],
@@ -76,6 +78,7 @@ const CreateGoals = () => {
     ];
 
     useEffect(() => {
+        console.log("@@@@@====>", allowance.data)
         if (allowance.data && allowance.data.gte(ethers.constants.MaxUint256.div(2))) {
             setIsApproved(true);
         } else {

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import { useAccount, useContractRead } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
 import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from "../config/constants";
 import { approve, deposit, automateDeposit, withdraw, cancelAutomatedDeposit } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { Address } from "viem";
 
 interface GoalData {
     what: string;
@@ -13,7 +14,7 @@ interface GoalData {
     currentAmount: string;
     targetAmount: string;
     targetDate: string;
-    depositToken: string;
+    depositToken: Address;
     depositTokenSymbol: string;
     automatedDepositAmount: any;
     automatedDepositDate: string;
@@ -42,7 +43,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         currentAmount: "",
         targetAmount: "",
         targetDate: "",
-        depositToken: "",
+        depositToken: "0x0000000000000000000000000000000000000000" as Address,
         depositTokenSymbol: "",
         automatedDepositAmount: "",
         automatedDepositDate: "",
@@ -50,42 +51,38 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     });
 
     // Get Goal Data
-    const goal = useContractRead({
-        addressOrName: GOALZ_ADDRESS,
-        contractInterface: GOALZ_ABI,
+    const goal = useReadContract({
+        address: GOALZ_ADDRESS,
+        abi: GOALZ_ABI,
         functionName: "savingsGoals",
         args: [goalId],
-        watch: true,
     });
 
-    const goalTokenData = useContractRead({
-        addressOrName: GOALZ_ADDRESS,
-        contractInterface: GOALZ_ABI,
+    const goalTokenData = useReadContract({
+        address: GOALZ_ADDRESS,
+        abi: GOALZ_ABI,
         functionName: "tokenOfOwnerByIndex",
         args: [address, goalIndex],
-        watch: true,
     });
 
     useEffect(() => {
         if (goalTokenData.data) {
-            setGoalId(goalTokenData.data.toNumber());
+            setGoalId(Number(goalTokenData.data));
         }
     }, [goalTokenData.data]);
 
-    const automatedDeposit = useContractRead({
-        addressOrName: GOALZ_ADDRESS,
-        contractInterface: GOALZ_ABI,
+    const automatedDeposit = useReadContract({
+        address: GOALZ_ADDRESS,
+        abi: GOALZ_ABI,
         functionName: "automatedDeposits",
         args: [goalIndex],
-        watch: true,
     });
 
-    const allowance = useContractRead({
-        addressOrName: goalData.depositToken,
-        contractInterface: ERC20_ABI,
+    const allowance = useReadContract({
+        address: goalData.depositToken,
+        abi: ERC20_ABI,
         functionName: "allowance",
         args: [address, GOALZ_ADDRESS],
-        watch: true,
     });
 
     useEffect(() => {
