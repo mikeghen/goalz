@@ -1,17 +1,18 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { createConfig, http } from 'wagmi'
 import { mainnet, baseSepolia } from 'wagmi/chains'
-import { coinbaseWallet, walletConnect } from 'wagmi/connectors'
+import { walletConnect } from 'wagmi/connectors'
 import {
   rainbowWallet,
   walletConnectWallet,
+  coinbaseWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 
 const connectors = connectorsForWallets(
   [
     {
       groupName: 'Recommended',
-      wallets: [rainbowWallet, walletConnectWallet],
+      wallets: [coinbaseWallet, rainbowWallet, walletConnectWallet],
     },
   ],
   {
@@ -23,10 +24,6 @@ const connectors = connectorsForWallets(
 export const config = createConfig({
   chains: [mainnet, baseSepolia],
   connectors: [
-    coinbaseWallet({
-      appName: 'Create Wagmi',
-      preference: 'smartWalletOnly',
-    }),
     ...connectors
   ],
   transports: {
