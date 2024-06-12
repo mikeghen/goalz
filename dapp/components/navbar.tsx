@@ -27,7 +27,6 @@ IProps) => {
 
       {/* Connect to web3, dark mode toggle */}
       <div className="flex items-center space-x-2">
-        <BlueCreateWalletButton />
         {isDarkModeToggleVisible && <DarkModeToggle />}
         {displayConnectButton && <ConnectWallet />}
       </div>
