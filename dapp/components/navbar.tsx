@@ -1,7 +1,6 @@
 import DarkModeToggle from './darkModeToggle'
 import ConnectWallet from './connectWallet'
 import Link from 'next/link'
-import { BlueCreateWalletButton } from './smartWalletButton'
 
 interface IProps {
   displayConnectButton?: boolean

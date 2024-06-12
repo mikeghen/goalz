@@ -9,7 +9,6 @@ import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider, useConnect } from 'wagmi'
 import { config } from '../config/config'
-import { BlueCreateWalletButton } from '../components/smartWalletButton'
 
 const queryClient = new QueryClient()
 
