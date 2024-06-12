@@ -18,12 +18,11 @@ const App = ({ Component, pageProps }: AppProps) => {
     <ThemeProvider attribute="class">
       <div className="min-h-screen bg-white dark:bg-gray-900 dark:text-white">
         <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider>
-          <BlueCreateWalletButton />
-            <Component {...pageProps} />
-          </RainbowKitProvider>
-        </QueryClientProvider>
+          <QueryClientProvider client={queryClient}>
+            <RainbowKitProvider>
+              <Component {...pageProps} />
+            </RainbowKitProvider>
+          </QueryClientProvider>
         </WagmiProvider>
       </div>
     </ThemeProvider>

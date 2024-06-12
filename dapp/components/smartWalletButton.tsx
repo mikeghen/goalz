@@ -9,16 +9,17 @@ const buttonStyles = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  width: 160,
+  width: 154,
   fontFamily: 'Arial, sans-serif',
   fontWeight: 'bold',
   fontSize: 16,
-  backgroundColor: '#0052FF',
+  backgroundColor: '#0e76fd',
   paddingLeft: 10,
-  paddingTop : 6,
-  paddingBottom : 6,
+  paddingTop : 5,
+  paddingBottom : 5,
   paddingRight: 15,
   borderRadius: 10,
+  color: '#FFFFFF'
 };
  
 export function BlueCreateWalletButton() {
@@ -35,7 +36,7 @@ export function BlueCreateWalletButton() {
   return (
     <button style={buttonStyles as React.CSSProperties} onClick={createWallet}>
       <CoinbaseWalletLogo />
-      Create Wallet
+      Smart Wallet
     </button>
   );
 }

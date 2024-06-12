@@ -1,6 +1,7 @@
 import DarkModeToggle from './darkModeToggle'
 import ConnectWallet from './connectWallet'
 import Link from 'next/link'
+import { BlueCreateWalletButton } from './smartWalletButton'
 
 interface IProps {
   displayConnectButton?: boolean
@@ -26,6 +27,7 @@ IProps) => {
 
       {/* Connect to web3, dark mode toggle */}
       <div className="flex items-center space-x-2">
+        <BlueCreateWalletButton />
         {isDarkModeToggleVisible && <DarkModeToggle />}
         {displayConnectButton && <ConnectWallet />}
       </div>
