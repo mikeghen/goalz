@@ -3,14 +3,22 @@ import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from '../config/con
 
 // Methods for executing transaction on Ethereum 
 
-export const getProvider = () => {
+export const getProvider = async () => {
     if (typeof (window as any).ethereum !== 'undefined') {
-        return new ethers.providers.Web3Provider((window as any).ethereum as ethers.providers.ExternalProvider);
+        const provider = new ethers.providers.Web3Provider((window as any).ethereum as ethers.providers.ExternalProvider);
+        await provider.send("eth_requestAccounts", []);
+        return provider;
     }
     throw new Error('Ethereum provider not found.');
 };
-export const getSigner = (provider: ethers.providers.Web3Provider) => {
-    return provider.getSigner();
+export const getSigner = async (provider: ethers.providers.Web3Provider) => {
+    const signer = provider.getSigner();
+    try {
+        await signer.getAddress();
+    } catch (error) {
+        throw new Error('No account is connected.');
+    }
+    return signer;
 };
 
 export const approve = async (depositToken: string) => {
