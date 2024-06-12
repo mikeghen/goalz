@@ -1,24 +1,17 @@
 import { BigNumber, ethers } from 'ethers';
-import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from '../config/constants'; 
+import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from '../config/constants';
+import { useWriteContract } from 'wagmi';
 
 // Methods for executing transaction on Ethereum 
 
-export const getProvider = async () => {
+export const getProvider = () => {
     if (typeof (window as any).ethereum !== 'undefined') {
-        const provider = new ethers.providers.Web3Provider((window as any).ethereum as ethers.providers.ExternalProvider);
-        await provider.send("eth_requestAccounts", []);
-        return provider;
+        return new ethers.providers.Web3Provider((window as any).ethereum as ethers.providers.ExternalProvider);
     }
     throw new Error('Ethereum provider not found.');
 };
-export const getSigner = async (provider: ethers.providers.Web3Provider) => {
-    const signer = provider.getSigner();
-    try {
-        await signer.getAddress();
-    } catch (error) {
-        throw new Error('No account is connected.');
-    }
-    return signer;
+export const getSigner = (provider: ethers.providers.Web3Provider) => {
+    return provider.getSigner();
 };
 
 export const approve = async (depositToken: string) => {
@@ -35,7 +28,24 @@ export const approve = async (depositToken: string) => {
     const approvalTx = await contract.approve(GOALZ_ADDRESS, maxApprovalAmount);
     await approvalTx.wait();
 };
+export const useContractApprove = () => {
+    const { writeContractAsync } = useWriteContract()
 
+    const approve = async (depositToken: string) => {
+        const maxApprovalAmount = ethers.constants.MaxUint256;
+        const res = await writeContractAsync({
+            abi: ERC20_ABI,
+            address: depositToken as any,
+            functionName: "approve",
+            args: [
+                GOALZ_ADDRESS,
+                maxApprovalAmount
+            ]
+        });
+        return res;
+    }
+    return approve;
+}
 export const allowance = async (depositToken: string) => {
     const provider = await getProvider();
     const signer = await getSigner(provider);
@@ -135,7 +145,7 @@ export const getGoalData = async (goalId: BigNumber) => {
 export const getEvents = async () => {
     const provider = await getProvider();
     const contract = new ethers.Contract(GOALZ_ADDRESS, GOALZ_ABI, provider);
-    const eventName = 'DepositMade'; 
+    const eventName = 'DepositMade';
     let startBlock = await provider.getBlockNumber() - 100; //43200 * days; 
     const endBlock = await provider.getBlockNumber();
     const filter = contract.filters[eventName](); // Create a filter for the event

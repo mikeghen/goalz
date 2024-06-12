@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { automateDeposit, setGoal, approve } from '../utils/ethereum';
+import { automateDeposit, setGoal, useContractApprove } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI } from '../config/constants';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract } from 'wagmi';
 import { type UseReadContractParameters } from 'wagmi'
 import { Address } from 'viem';
 
@@ -62,6 +62,8 @@ const CreateGoals = () => {
     const [why, setWhy] = useState('');
     const [targetAmount, setTargetAmount] = useState('');
     const [isApproved, setIsApproved] = useState(false);
+
+    const approve = useContractApprove();
 
     const allowance = useReadContract({
         address: depositToken,
