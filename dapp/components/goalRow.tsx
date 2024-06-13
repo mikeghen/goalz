@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useReadContract } from "wagmi";
 import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from "../config/constants";
-import { approve, deposit, automateDeposit, withdraw, cancelAutomatedDeposit } from "../utils/ethereum";
+import { deposit, withdraw, cancelAutomatedDeposit } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { Address } from "viem";
+import { useAutomateDeposit, useContractApprove } from '../utils/ethereum';
 
 interface GoalData {
     what: string;
@@ -37,6 +38,8 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     const [isWithdrawLoading, setIsWithdrawLoading] = useState(false);
     const [isCancelAutomateLoading, setIsCancelAutomateLoading] = useState(false);
     const [isAllowed, setIsAllowed] = useState(false);
+    const automateDeposit = useAutomateDeposit();
+    const approve = useContractApprove();
     const [goalData, setGoalData] = useState<GoalData>({
         what: "",
         why: "",

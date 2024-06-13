@@ -1,33 +1,17 @@
 import { BigNumber, ethers } from 'ethers';
 import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from '../config/constants';
-import { useWriteContract } from 'wagmi';
+import { useReadContract, useWriteContract } from 'wagmi';
 
-// Methods for executing transaction on Ethereum 
-
-export const getProvider = () => {
+export const getProvider = async () => {
     if (typeof (window as any).ethereum !== 'undefined') {
         return new ethers.providers.Web3Provider((window as any).ethereum as ethers.providers.ExternalProvider);
     }
     throw new Error('Ethereum provider not found.');
 };
-export const getSigner = (provider: ethers.providers.Web3Provider) => {
+export const getSigner = async (provider: ethers.providers.Web3Provider) => {
     return provider.getSigner();
 };
 
-export const approve = async (depositToken: string) => {
-    const provider = await getProvider();
-    const signer = await getSigner(provider);
-    const contract = new ethers.Contract(
-        depositToken,
-        ERC20_ABI,
-        signer
-    );
-
-    // TODO: No max approval
-    const maxApprovalAmount = ethers.constants.MaxUint256;
-    const approvalTx = await contract.approve(GOALZ_ADDRESS, maxApprovalAmount);
-    await approvalTx.wait();
-};
 export const useContractApprove = () => {
     const { writeContractAsync } = useWriteContract()
 
@@ -46,55 +30,66 @@ export const useContractApprove = () => {
     }
     return approve;
 }
-export const allowance = async (depositToken: string) => {
-    const provider = await getProvider();
-    const signer = await getSigner(provider);
-    const contract = new ethers.Contract(
-        depositToken,
-        ERC20_ABI,
-        signer
-    );
-    const allowance = await contract.allowance(await signer.getAddress(), GOALZ_ADDRESS);
-    return allowance;
-}
+export const useContractAllowance = () => {
 
-export const setGoal = async (depositToken: string, what: string, why: string, targetAmount: BigNumber, targetDate: BigNumber) => {
-    const provider = await getProvider();
-    const signer = await getSigner(provider);
-    const goalz = new ethers.Contract(
-        GOALZ_ADDRESS,
-        GOALZ_ABI,
-        signer
-    );
-    const goalTx = await goalz.setGoal(what, why, targetAmount, targetDate, depositToken);
-    return await goalTx.wait();
+    const getAllowance = async (depositToken: string) => {
+        const allowance = useReadContract({
+            address: depositToken as any,
+            abi: ERC20_ABI,
+            functionName: "allowance",
+            args: [GOALZ_ADDRESS],
+        });
+        return allowance;
+    };
+
+    return getAllowance;
 };
 
-export const deleteGoal = async (goalId: BigNumber) => {
-    const provider = await getProvider();
-    const signer = await getSigner(provider);
-    const goalz = new ethers.Contract(
-        GOALZ_ADDRESS,
-        GOALZ_ABI,
-        signer
-    );
-    const deleteGoalTx = await goalz.deleteGoal(goalId);
-    await deleteGoalTx.wait();
+export const useSetGoal = () => {
+    const { writeContractAsync } = useWriteContract();
+
+    const setGoal = async (depositToken: string, what: string, why: string, targetAmount: BigNumber, targetDate: BigNumber) => {
+        const res = await writeContractAsync({
+            abi: GOALZ_ABI,
+            address: GOALZ_ADDRESS,
+            functionName: "setGoal",
+            args: [what, why, targetAmount, targetDate, depositToken]
+        });
+        return res;
+    };
+
+    return setGoal;
+};
+
+export const useDeleteGoal = () => {
+    const { writeContractAsync } = useWriteContract();
+
+    const deleteGoal = async (goalId: BigNumber) => {
+        const res = await writeContractAsync({
+            abi: GOALZ_ABI,
+            address: GOALZ_ADDRESS,
+            functionName: "deleteGoal",
+            args: [goalId]
+        });
+        return res;
+    };
+
+    return deleteGoal;
 };
 
 export const deposit = async (goalId: BigNumber, amount: BigNumber) => {
-    const provider = await getProvider();
-    const signer = await getSigner(provider);
-    const goalz = new ethers.Contract(
-        GOALZ_ADDRESS,
-        GOALZ_ABI,
-        signer
-    );
-    const depositTx = await goalz.deposit(goalId, amount);
-    await depositTx.wait();
+    const { writeContractAsync } = useWriteContract();
+    const res = await writeContractAsync({
+        abi: GOALZ_ABI,
+        address: GOALZ_ADDRESS,
+        functionName: "deposit",
+        args: [goalId, amount]
+    });
+    return res;
 };
 
 export const withdraw = async (goalId: BigNumber) => {
+    const { writeContractAsync } = useWriteContract();
     const provider = await getProvider();
     const signer = await getSigner(provider);
     const goalz = new ethers.Contract(
@@ -106,41 +101,52 @@ export const withdraw = async (goalId: BigNumber) => {
     await withdrawTx.wait();
 };
 
-export const automateDeposit = async (goalId: BigNumber, amount: BigNumber, frequency: BigNumber) => {
-    const provider = await getProvider();
-    const signer = await getSigner(provider);
-    const goalz = new ethers.Contract(
-        GOALZ_ADDRESS,
-        GOALZ_ABI,
-        signer
-    );
-    const automateDepositTx = await goalz.automateDeposit(goalId, amount, frequency);
-    await automateDepositTx.wait();
+export const useAutomateDeposit = () => {
+    const { writeContractAsync } = useWriteContract();
+
+    const automateDeposit = async (goalId: BigNumber, amount: BigNumber, frequency: BigNumber) => {
+        const res = await writeContractAsync({
+            abi: GOALZ_ABI,
+            address: GOALZ_ADDRESS,
+            functionName: "automateDeposit",
+            args: [goalId, amount, frequency]
+        });
+        return res;
+    };
+
+    return automateDeposit;
 };
 
-export const cancelAutomatedDeposit = async (goalId: BigNumber) => {
-    const provider = await getProvider();
-    const signer = await getSigner(provider);
-    const goalz = new ethers.Contract(
-        GOALZ_ADDRESS,
-        GOALZ_ABI,
-        signer
-    );
-    const cancelAutomatedDepositTx = await goalz.cancelAutomatedDeposit(goalId);
-    await cancelAutomatedDepositTx.wait();
+export const useCancelAutomatedDeposit = () => {
+    const { writeContractAsync } = useWriteContract();
+
+    const cancelAutomatedDeposit = async (goalId: BigNumber) => {
+        const res = await writeContractAsync({
+            abi: GOALZ_ABI,
+            address: GOALZ_ADDRESS,
+            functionName: "cancelAutomatedDeposit",
+            args: [goalId]
+        });
+        return res;
+    };
+
+    return cancelAutomatedDeposit;
 };
 
-export const getGoalData = async (goalId: BigNumber) => {
-    const provider = await getProvider();
-    const signer = await getSigner(provider);
-    const goalz = new ethers.Contract(
-        GOALZ_ADDRESS,
-        GOALZ_ABI,
-        signer
-    );
-    const goalData = await goalz.savingsGoals(goalId);
-    return goalData;
-}
+export const useGetGoalData = () => {
+
+    const getGoalData = async (goalId: BigNumber) => {
+        const data = useReadContract({
+            abi: GOALZ_ABI,
+            address: GOALZ_ADDRESS,
+            functionName: "savingsGoals",
+            args: [goalId]
+        });
+        return data;
+    };
+
+    return getGoalData;
+};
 
 export const getEvents = async () => {
     const provider = await getProvider();

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
-import { getEvents, getGoalData } from '../utils/ethereum';
+import { getEvents, useGetGoalData } from '../utils/ethereum';
 import { formatTokenAmount } from '../utils/helpers';
 
 const DepositHistory = () => {
     const { address } = useAccount();
-
+    const getGoalData = useGetGoalData();
     const [depositEvents, setDepositEvents] = useState([] as any);
 
     const getDepositEvents = async () => {
@@ -16,7 +16,7 @@ const DepositHistory = () => {
                 // Get the goalId from the deposit
                 const goalId = deposit.args.goalId;
                 // Get the goal data from the goalId
-                const goalData = await getGoalData(goalId);
+                const goalData = await getGoalData(goalId) as any;
                 // Add the goal data to the deposit
                 const block = await deposit.getBlock();
                 return {

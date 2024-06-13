@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { automateDeposit, setGoal, useContractApprove } from '../utils/ethereum';
+import { useAutomateDeposit, useContractApprove, useSetGoal } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI } from '../config/constants';
@@ -62,7 +62,8 @@ const CreateGoals = () => {
     const [why, setWhy] = useState('');
     const [targetAmount, setTargetAmount] = useState('');
     const [isApproved, setIsApproved] = useState(false);
-
+    const setGoal = useSetGoal();
+    const automateDeposit = useAutomateDeposit();
     const approve = useContractApprove();
 
     const allowance = useReadContract({
@@ -109,7 +110,7 @@ const CreateGoals = () => {
 
         try {
             setSetGoalLoading(true);
-            let result = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix);
+            let result = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix) as any;
 
             if (showDepositForm && isApproved) {
                 toast.success(`Goal set! Automating deposit...`);
@@ -157,6 +158,7 @@ const CreateGoals = () => {
 
     const handleApprove = async () => {
         try {
+            console.log("########");
             setApproveLoading(true); // Start loading
             await approve(depositToken);
             toast.success('Approved contract to spend tokens.');
