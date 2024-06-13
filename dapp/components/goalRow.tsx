@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useReadContract } from "wagmi";
 import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from "../config/constants";
-import { deposit, withdraw, cancelAutomatedDeposit } from "../utils/ethereum";
+import { deposit, useCancelAutomatedDeposit, withdraw } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { Address } from "viem";
 import { useAutomateDeposit, useContractApprove } from '../utils/ethereum';
+import { formatEther } from "ethers/lib/utils";
 
 interface GoalData {
     what: string;
@@ -40,6 +41,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     const [isAllowed, setIsAllowed] = useState(false);
     const automateDeposit = useAutomateDeposit();
     const approve = useContractApprove();
+    const cancelAutomatedDeposit = useCancelAutomatedDeposit();
     const [goalData, setGoalData] = useState<GoalData>({
         what: "",
         why: "",
@@ -91,7 +93,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     useEffect(() => {
         console.log("allowance.data", allowance.data);
         if (allowance.data) {
-            if (ethers.BigNumber.from(allowance.data).gt(0)) {
+            if (allowance.data.gt(0)) {
                 setIsAllowed(true);
             } else {
                 setIsAllowed(false);
@@ -103,10 +105,13 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     // Format the goal data
     useEffect(() => {
         if (goal.data) {
-            const targetDate = new Date(goal.data.targetDate.mul(1000).toNumber());
-            const goalProgress = goal.data.currentAmount.mul(100).div(goal.data.targetAmount).toNumber();
+            const gData = goal.data as any;
+            const targetDate = new Date(Number(gData[4])*1000); 
+            const goalProgress = ethers.BigNumber.from(gData[3]).isZero() 
+            ? 0 
+            : ethers.BigNumber.from(gData[2]).mul(100).div(ethers.BigNumber.from(gData[3])).toNumber();
             let depositTokenSymbol = "";
-            if (goal.data.depositToken == USDC_ADDRESS) {
+            if (gData[5] == USDC_ADDRESS) {
                 depositTokenSymbol = "USDC";
             } else {
                 depositTokenSymbol = "WETH";
@@ -116,37 +121,39 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
             let currentAmount = '0';
             let targetAmount = '0';
             let decimals = 18;
-            if (goal.data.depositToken == USDC_ADDRESS) {
+            if (gData[5] == USDC_ADDRESS) {
                 decimals = 6;
-                targetAmount = formatTokenAmount(goal.data[3], decimals, 0);
-                currentAmount = formatTokenAmount(goal.data[2], decimals, 0);
+                targetAmount = formatTokenAmount(gData[3], decimals, 0);
+                currentAmount = formatTokenAmount(gData[2], decimals, 0);
             } else {
-                targetAmount = formatTokenAmount(goal.data[3], decimals, 3);
-                currentAmount = formatTokenAmount(goal.data[2], decimals, 3);
+                targetAmount = formatTokenAmount(gData[3], decimals, 3);
+                currentAmount = formatTokenAmount(gData[2], decimals, 3);
             }
 
             // Update the goal data state to add the goal data
             setGoalData((prevGoalData) => ({
                 ...prevGoalData,
-                what: goal.data?.what,
-                why: goal.data?.why,
+                what:gData[0],
+                why:gData[1],
                 currentAmount: currentAmount,
-                depositToken: goal.data?.depositToken,
+                depositToken: gData[5],
                 depositTokenSymbol: depositTokenSymbol,
                 targetAmount: targetAmount,
                 targetDate: formatDate(targetDate),
-                completed: goal.data?.complete,
+                completed:gData[6],
             }));
-            console.log("goal.data.completed", goal.data);
+            console.log("goal.data.completed",gData);
         }
     }, [goal.data]);
 
     useEffect(() => {
         if (automatedDeposit.data && !automatedDeposit.error) {
-            if (automatedDeposit.data.amount.gt(0)) {
+            console.log("automatedDeposit.data", automatedDeposit.data);
+            const automatedDepositData = automatedDeposit.data as any;
+            if (automatedDepositData[0]) {
                 console.log("automatedDeposit.data", automatedDeposit.data);
-                const nextDepositTimestamp = automatedDeposit.data.lastDeposit.add(automatedDeposit.data.frequency).mul(1000);
-                const automatedDepositDate = new Date(nextDepositTimestamp.toNumber());
+                const automatedDepositDate = new Date(Number(automatedDepositData[2])*1000);
+                console.log("automatedDepositDate", Number(automatedDepositData[2])*1000, Number(automatedDepositData[2]));
 
                 let decimals = 18;
                 if (goalData.depositToken == USDC_ADDRESS) {
@@ -156,7 +163,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                 // Update the goal data state to add the goal data
                 setGoalData((prevGoalData) => ({
                     ...prevGoalData,
-                    automatedDepositAmount: formatTokenAmount(automatedDeposit.data?.amount, 6, 0),
+                    automatedDepositAmount: formatTokenAmount(automatedDepositData[2], 6, 0),
                     automatedDepositDate: formatDate(automatedDepositDate),
                 }));
             } else {
@@ -216,11 +223,11 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     const handleApprove = async () => {
         // Get the amount to deposit
         const amount = (document.getElementById(`deposit-amount-${goalIndex}`) as HTMLInputElement).value;
-
         // Try to approve the goalz contract to spend the amount
+        console.log(ethers.utils.parseUnits(amount, 18));
         try {
             setIsApproveLoading(true);
-            await approve(goalData.depositToken);
+            await approve(goalData.depositToken, ethers.utils.parseUnits(amount, 18));
             toast.success('Approved!');
         } catch (error) {
             console.log("approve error:", error);
@@ -277,6 +284,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         // Try to withdraw
         try {
             setIsWithdrawLoading(true);
+            console.log(goalIndex)
             await withdraw(goalIndex);
             toast.success(`Withdrew ${goalData.currentAmount} from ${goalData.what}!`);
         } catch (error) {
@@ -292,6 +300,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         // Try to cancel automated deposit
         try {
             setIsCancelAutomateLoading(true);
+            console.log(goalIndex)
             await cancelAutomatedDeposit(goalIndex);
             toast.success(`Canceled automated deposit for ${goalData.what}!`);
             // Update the UI state

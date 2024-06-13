@@ -15,15 +15,14 @@ export const getSigner = async (provider: ethers.providers.Web3Provider) => {
 export const useContractApprove = () => {
     const { writeContractAsync } = useWriteContract()
 
-    const approve = async (depositToken: string) => {
-        const maxApprovalAmount = ethers.constants.MaxUint256;
+    const approve = async (depositToken: string, amount? : BigNumber) => {
         const res = await writeContractAsync({
             abi: ERC20_ABI,
             address: depositToken as any,
             functionName: "approve",
             args: [
                 GOALZ_ADDRESS,
-                maxApprovalAmount
+                amount
             ]
         });
         return res;
