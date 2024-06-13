@@ -91,7 +91,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     useEffect(() => {
         console.log("allowance.data", allowance.data);
         if (allowance.data) {
-            if (allowance.data.gt(0)) {
+            if (ethers.BigNumber.from(allowance.data).gt(0)) {
                 setIsAllowed(true);
             } else {
                 setIsAllowed(false);

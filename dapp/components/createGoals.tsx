@@ -82,8 +82,11 @@ const CreateGoals = () => {
 
     useEffect(() => {
         console.log("@@@@@====>", allowance.data)
-        if (allowance.data && allowance.data.gte(ethers.constants.MaxUint256.div(2))) {
+        if (allowance.data) {
+
+          if( ethers.BigNumber.from(allowance.data).gte(ethers.constants.MaxUint256.div(2))) {
             setIsApproved(true);
+          }
         } else {
             setIsApproved(false);
         }
