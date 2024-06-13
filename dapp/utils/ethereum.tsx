@@ -90,15 +90,13 @@ export const deposit = async (goalId: BigNumber, amount: BigNumber) => {
 
 export const withdraw = async (goalId: BigNumber) => {
     const { writeContractAsync } = useWriteContract();
-    const provider = await getProvider();
-    const signer = await getSigner(provider);
-    const goalz = new ethers.Contract(
-        GOALZ_ADDRESS,
-        GOALZ_ABI,
-        signer
-    );
-    const withdrawTx = await goalz.withdraw(goalId);
-    await withdrawTx.wait();
+    const res = await writeContractAsync({
+        abi: GOALZ_ABI,
+        address: GOALZ_ADDRESS,
+        functionName: "withdraw",
+        args: [goalId]
+    });
+    return res;
 };
 
 export const useAutomateDeposit = () => {
