@@ -72,7 +72,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
 
     useEffect(() => {
         if (goalTokenData.data) {
-            setGoalId(Number(goalTokenData.data));
+            setGoalId(ethers.BigNumber.from(goalTokenData.data));
         }
     }, [goalTokenData.data]);
 
@@ -205,9 +205,9 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         try {
             setIsDepositLoading(true);
             if(goalData.depositToken == USDC_ADDRESS) {
-                await deposit(goalIndex, ethers.utils.parseUnits(amount, 6));
+                await deposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(amount, 6));
             } else {
-                await deposit(goalIndex, ethers.utils.parseUnits(amount, 18));
+                await deposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(amount, 18));
             }
             toast.success(`Deposited ${amount} toward ${goalData.what}!`);
         } catch (error) {
@@ -267,7 +267,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
             if (goalData.depositToken == USDC_ADDRESS) {
                 decimals = 6;
             }
-            await automateDeposit(goalIndex, ethers.utils.parseUnits(autoDepositAmount, decimals), frequencySeconds);
+            await automateDeposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(autoDepositAmount, decimals), frequencySeconds);
             toast.success(`Automated deposit of ${autoDepositAmount} every ${autoDepositFrequency} ${frequencyUnit}.`);
         } catch (error) {
             console.log("automateDeposit error:", error);
@@ -284,7 +284,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         try {
             setIsWithdrawLoading(true);
             console.log(goalIndex)
-            await withdraw(goalIndex);
+            await withdraw(ethers.BigNumber.from(goalId));
             toast.success(`Withdrew ${goalData.currentAmount} from ${goalData.what}!`);
         } catch (error) {
             console.log("withdraw error:", error);
@@ -300,7 +300,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         try {
             setIsCancelAutomateLoading(true);
             console.log(goalIndex)
-            await cancelAutomatedDeposit(goalIndex);
+            await cancelAutomatedDeposit(ethers.BigNumber.from(goalId));
             toast.success(`Canceled automated deposit for ${goalData.what}!`);
             // Update the UI state
             setGoalData((prevGoalData) => ({
