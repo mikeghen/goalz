@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useReadContract } from "wagmi";
 import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from "../config/constants";
-import { deposit, useCancelAutomatedDeposit, withdraw } from "../utils/ethereum";
+import { useDeposit, useCancelAutomatedDeposit, useWithdraw, useAutomateDeposit, useContractApprove } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { Address } from "viem";
-import { useAutomateDeposit, useContractApprove } from '../utils/ethereum';
 import { formatEther } from "ethers/lib/utils";
 
 interface GoalData {
@@ -39,9 +38,6 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     const [isWithdrawLoading, setIsWithdrawLoading] = useState(false);
     const [isCancelAutomateLoading, setIsCancelAutomateLoading] = useState(false);
     const [isAllowed, setIsAllowed] = useState(false);
-    const automateDeposit = useAutomateDeposit();
-    const approve = useContractApprove();
-    const cancelAutomatedDeposit = useCancelAutomatedDeposit();
     const [goalData, setGoalData] = useState<GoalData>({
         what: "",
         why: "",
@@ -54,6 +50,12 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         automatedDepositDate: "",
         completed: false,
     });
+
+    const automateDeposit = useAutomateDeposit();
+    const approve = useContractApprove();
+    const cancelAutomatedDeposit = useCancelAutomatedDeposit();
+    const deposit = useDeposit();
+    const withdraw = useWithdraw();
 
     // Get Goal Data
     const goal = useReadContract({
@@ -105,9 +107,9 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         if (goal.data) {
             const gData = goal.data as any;
             const targetDate = new Date(Number(gData[4])*1000); 
-            const goalProgress = ethers.BigNumber.from(gData[3]).isZero() 
+            const goalProgress = ethers.BigNumber.from(gData[2]).isZero() 
             ? 0 
-            : ethers.BigNumber.from(gData[2]).mul(100).div(ethers.BigNumber.from(gData[3])).toNumber();
+            : ethers.BigNumber.from(gData[3]).mul(100).div(ethers.BigNumber.from(gData[2])).toNumber();
             let depositTokenSymbol = "";
             if (gData[5] == USDC_ADDRESS) {
                 depositTokenSymbol = "USDC";

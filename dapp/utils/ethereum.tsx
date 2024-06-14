@@ -57,6 +57,7 @@ export const useSetGoal = () => {
 
         // Use the provider to look up the event log from that txnHash
         const provider = await getProvider();
+        await provider.waitForTransaction(txnHash);
         const receipt = await provider.getTransactionReceipt(txnHash);
         const log = receipt.logs[1];
         const parsedLog = new ethers.utils.Interface(GOALZ_ABI).parseLog(log);
@@ -83,26 +84,37 @@ export const useDeleteGoal = () => {
     return deleteGoal;
 };
 
-export const deposit = async (goalId: BigNumber, amount: BigNumber) => {
+export const useDeposit = () => {
     const { writeContractAsync } = useWriteContract();
-    const res = await writeContractAsync({
-        abi: GOALZ_ABI,
-        address: GOALZ_ADDRESS,
-        functionName: "deposit",
-        args: [goalId, amount]
-    });
-    return res;
+
+    const deposit = async (goalId: BigNumber, amount: BigNumber) => {
+
+        const res = await writeContractAsync({
+            abi: GOALZ_ABI,
+            address: GOALZ_ADDRESS,
+            functionName: "deposit",
+            args: [goalId, amount]
+        });
+        return res;
+    }
+
+    return deposit;
 };
 
-export const withdraw = async (goalId: BigNumber) => {
+export const useWithdraw = () => {
     const { writeContractAsync } = useWriteContract();
-    const res = await writeContractAsync({
-        abi: GOALZ_ABI,
-        address: GOALZ_ADDRESS,
-        functionName: "withdraw",
-        args: [goalId]
-    });
-    return res;
+
+    const withdraw = async (goalId: BigNumber) => {
+        const res = await writeContractAsync({
+            abi: GOALZ_ABI,
+            address: GOALZ_ADDRESS,
+            functionName: "withdraw",
+            args: [goalId]
+        });
+        return res;
+    }; 
+
+    return withdraw;
 };
 
 export const useAutomateDeposit = () => {
