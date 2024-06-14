@@ -80,7 +80,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         address: GOALZ_ADDRESS,
         abi: GOALZ_ABI,
         functionName: "automatedDeposits",
-        args: [goalIndex],
+        args: [goalId],
     });
 
     const allowance = useReadContract({
@@ -157,7 +157,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                 // Update the goal data state to add the goal data
                 setGoalData((prevGoalData) => ({
                     ...prevGoalData,
-                    automatedDepositAmount: formatTokenAmount(automatedDepositData[2], 6, 0),
+                    automatedDepositAmount: formatTokenAmount(automatedDepositData[0], 6, 0),
                     automatedDepositDate: formatDate(automatedDepositDate),
                 }));
             } else {
