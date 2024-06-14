@@ -15,14 +15,14 @@ export const getSigner = async (provider: ethers.providers.Web3Provider) => {
 export const useContractApprove = () => {
     const { writeContractAsync } = useWriteContract()
 
-    const approve = async (depositToken: string, amount? : BigNumber) => {
+    const approve = async (depositToken: string) => {
         const res = await writeContractAsync({
             abi: ERC20_ABI,
             address: depositToken as any,
             functionName: "approve",
             args: [
                 GOALZ_ADDRESS,
-                amount
+                ethers.constants.MaxUint256
             ]
         });
         return res;
@@ -48,13 +48,20 @@ export const useSetGoal = () => {
     const { writeContractAsync } = useWriteContract();
 
     const setGoal = async (depositToken: string, what: string, why: string, targetAmount: BigNumber, targetDate: BigNumber) => {
-        const res = await writeContractAsync({
+        const txnHash = await writeContractAsync({
             abi: GOALZ_ABI,
             address: GOALZ_ADDRESS,
             functionName: "setGoal",
             args: [what, why, targetAmount, targetDate, depositToken]
         });
-        return res;
+
+        // Use the provider to look up the event log from that txnHash
+        const provider = await getProvider();
+        const receipt = await provider.getTransactionReceipt(txnHash);
+        const log = receipt.logs[1];
+        const parsedLog = new ethers.utils.Interface(GOALZ_ABI).parseLog(log);
+        const goalId = parsedLog.args.tokenId;
+        return goalId;
     };
 
     return setGoal;

@@ -112,12 +112,11 @@ const CreateGoals = () => {
 
         try {
             setSetGoalLoading(true);
-            let result = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix) as any;
+            const goalId = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix) as any;
 
             if (showDepositForm && isApproved) {
                 toast.success(`Goal set! Automating deposit...`);
                 let depositAmountBigNumber;
-                const goalId = result.events[1].args.goalId;
                 if (depositToken === USDC_ADDRESS) {
                     depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 6);
                 } else {
