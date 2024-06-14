@@ -91,7 +91,6 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     });
 
     useEffect(() => {
-        console.log("allowance.data", allowance.data);
         if (allowance.data) {
             if (ethers.BigNumber.from(allowance.data).gt(0)) {
                 setIsAllowed(true);
@@ -147,13 +146,9 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
 
     useEffect(() => {
         if (automatedDeposit.data && !automatedDeposit.error) {
-            console.log("automatedDeposit.data", automatedDeposit.data);
             const automatedDepositData = automatedDeposit.data as any;
             if (automatedDepositData[0]) {
-                console.log("automatedDeposit.data", automatedDeposit.data);
                 const automatedDepositDate = new Date(Number(automatedDepositData[2])*1000);
-                console.log("automatedDepositDate", Number(automatedDepositData[2])*1000, Number(automatedDepositData[2]));
-
                 let decimals = 18;
                 if (goalData.depositToken == USDC_ADDRESS) {
                     decimals = 6;
@@ -299,7 +294,6 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         // Try to cancel automated deposit
         try {
             setIsCancelAutomateLoading(true);
-            console.log(goalIndex)
             await cancelAutomatedDeposit(goalIndex);
             toast.success(`Canceled automated deposit for ${goalData.what}!`);
             // Update the UI state

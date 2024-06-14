@@ -81,7 +81,6 @@ const CreateGoals = () => {
     ];
 
     useEffect(() => {
-        console.log("@@@@@====>", allowance.data)
         if (allowance.data) {
 
           if( ethers.BigNumber.from(allowance.data).gte(ethers.constants.MaxUint256.div(2))) {
@@ -161,7 +160,6 @@ const CreateGoals = () => {
 
     const handleApprove = async () => {
         try {
-            console.log("########");
             setApproveLoading(true); // Start loading
             await approve(depositToken);
             toast.success('Approved contract to spend tokens.');
