@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { automateDeposit, setGoal, approve } from '../utils/ethereum';
+import React, { useState, useEffect, useRef } from 'react';
+import { useAutomateDeposit, useContractApprove, useSetGoal } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
-import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI } from '../config/constants';
-import { useAccount, useContractRead } from 'wagmi';
+import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI, GOALZ_ABI } from '../config/constants';
+import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useRouter } from 'next/router'; // Import useRouter from next/router
+import { Address } from 'viem';
 
 const EmojiSelect = ({ onSelect, selectedEmoji }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedEmoji: string }) => {
     const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟', '💻', '🚗']; // Add more emojis as needed
@@ -46,27 +48,59 @@ const ExampleGoalCard = ({ goal, emoji, token, onStart }: { goal: string, emoji:
 
 const CreateGoals = () => {
     const { address } = useAccount();
+    const router = useRouter(); // Initialize useRouter
     const [setGoalLoading, setSetGoalLoading] = useState(false);
     const [approveLoading, setApproveLoading] = useState(false); // Add loading state for Approve button
+    const [automateLoading, setAutomateLoading] = useState(false);
     const [savingsAmount, setSavingsAmount] = useState("0.00");
     const [showDepositForm, setShowDepositForm] = useState(false);
     const [depositAmount, setDepositAmount] = useState('');
     const [frequencyAmount, setFrequencyAmount] = useState('');
     const [frequencyUnit, setFrequencyUnit] = useState("days");
     const [emoji, setEmoji] = useState('');
-    const [depositToken, setDepositToken] = useState(USDC_ADDRESS);
+    const [depositToken, setDepositToken] = useState<Address>(USDC_ADDRESS);
     const [unit, setUnit] = useState('USDC');
     const [what, setWhat] = useState('');
     const [why, setWhy] = useState('');
     const [targetAmount, setTargetAmount] = useState('');
     const [isApproved, setIsApproved] = useState(false);
+    const [goalId, setGoalId] = useState<ethers.BigNumber>();
+    const [hash, setHash] = useState<Address>();
+    const [goalCreated, setGoalCreated] = useState(false);
+    const setGoal = useSetGoal();
+    const automateDeposit = useAutomateDeposit();
+    const approve = useContractApprove();
 
-    const allowance = useContractRead({
-        addressOrName: depositToken,
-        contractInterface: ERC20_ABI,
+    const receiptData = useWaitForTransactionReceipt({ hash });
+
+    useEffect(() => {
+        if (receiptData.data) {
+            // Loop over all the logs and try to parse the log, if it's parsed success, then set the goal id, if not, move to check the next log
+            for (let i = 0; i < receiptData.data.logs.length; i++) {
+                const log = receiptData.data.logs[i];
+                // This line may throw a TransactionExecutionError, use a try catch block to handle it
+                try {
+                    console.log("Log:", log);
+                    const parsedLog = new ethers.utils.Interface(GOALZ_ABI).parseLog(log);
+                    if (parsedLog.name === "GoalCreated") {
+                        console.log("GoalId:", parsedLog.args.goalId.toString());
+                        setGoalId(parsedLog.args.goalId);
+                        setGoalCreated(true);
+
+                        break;
+                    }
+                } catch (error) {
+                    console.log("Error parsing log:", error);
+                }
+            }
+        }
+    }, [receiptData.data]);
+
+    const allowance = useReadContract({
+        address: depositToken,
+        abi: ERC20_ABI,
         functionName: "allowance",
         args: [address, GOALZ_ADDRESS],
-        watch: true,
     });
 
     const exampleGoals = [
@@ -77,8 +111,11 @@ const CreateGoals = () => {
     ];
 
     useEffect(() => {
-        if (allowance.data && allowance.data.gte(ethers.constants.MaxUint256.div(2))) {
-            setIsApproved(true);
+        if (allowance.data) {
+
+            if (ethers.BigNumber.from(allowance.data).gte(ethers.constants.MaxUint256.div(2))) {
+                setIsApproved(true);
+            }
         } else {
             setIsApproved(false);
         }
@@ -105,43 +142,11 @@ const CreateGoals = () => {
 
         try {
             setSetGoalLoading(true);
-            let result = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix);
-
-            if (showDepositForm && isApproved) {
-                toast.success(`Goal set! Automating deposit...`);
-                let depositAmountBigNumber;
-                const goalId = result.events[1].args.goalId;
-                if (depositToken === USDC_ADDRESS) {
-                    depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 6);
-                } else {
-                    depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 18);
-                }
-
-                let frequencySeconds;
-                switch (frequencyUnit) {
-                    case "minutes":
-                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(60);
-                        break;
-                    case "hours":
-                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(3600);
-                        break;
-                    case "days":
-                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(86400);
-                        break;
-                    case "weeks":
-                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(604800);
-                        break;
-                    case "months":
-                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(2592000); // Approximation
-                        break;
-                    default:
-                        frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(86400);
-                }
-
-                await automateDeposit(goalId, depositAmountBigNumber, frequencySeconds);
-                toast.success(`${depositAmount} ${unit} will be deposited every ${frequencyAmount} ${frequencyUnit} toward your goal.`);
-            } else {
+            let resHash = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix) as any;
+            setHash(resHash);
+            if (!showDepositForm) {
                 toast.success('Goal set!');
+                router.push('/'); // Redirect to goal view page
             }
         } catch (error) {
             toast.error('Error setting goal.');
@@ -200,6 +205,50 @@ const CreateGoals = () => {
 
     const handleFrequencyAmountChange = (event: any) => {
         setFrequencyAmount(event.target.value);
+    };
+
+    const automateDepositHandler = async () => {
+        if (!goalId) return;
+
+        let depositAmountBigNumber;
+        if (depositToken === USDC_ADDRESS) {
+            depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 6);
+        } else {
+            depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 18);
+        }
+
+        let frequencySeconds;
+        switch (frequencyUnit) {
+            case "minutes":
+                frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(60);
+                break;
+            case "hours":
+                frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(3600);
+                break;
+            case "days":
+                frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(86400);
+                break;
+            case "weeks":
+                frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(604800);
+                break;
+            case "months":
+                frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(2592000); // Approximation
+                break;
+            default:
+                frequencySeconds = ethers.BigNumber.from(frequencyAmount).mul(86400);
+        }
+
+        try {
+            setAutomateLoading(true);
+            await automateDeposit(goalId, depositAmountBigNumber, frequencySeconds);
+            toast.success(`${depositAmount} ${unit} will be deposited every ${frequencyAmount} ${frequencyUnit} toward your goal.`);
+            router.push('/'); 
+        } catch (error) {
+            toast.error('Error automating deposit.');
+            console.log("automateDeposit error:", error);
+        } finally {
+            setAutomateLoading(false);
+        }
     };
 
     const setExampleGoal = (goal: any, emoji: any, token: any, amount: any) => {
@@ -348,13 +397,25 @@ const CreateGoals = () => {
                                 </div>
                             )}
                             <br />
-                            <button className="btn btn-primary" onClick={handleCreateGoal} disabled={showDepositForm && !isApproved}>
-                                {setGoalLoading ? (
-                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                ) : (
-                                    'Start Saving'
-                                )}
-                            </button>
+                            {goalCreated ? (
+                                showDepositForm && isApproved ? (
+                                    <button className="btn btn-warning" onClick={automateDepositHandler} disabled={automateLoading}>
+                                        {automateLoading ? (
+                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        ) : (
+                                            'Start Automation'
+                                        )}
+                                    </button>
+                                ) : null
+                            ) : (
+                                <button className="btn btn-primary" onClick={handleCreateGoal} disabled={showDepositForm && !isApproved}>
+                                    {setGoalLoading ? (
+                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    ) : (
+                                        'Start Saving'
+                                    )}
+                                </button>
+                            )}
                             <br />
                         </div>
                     </div>

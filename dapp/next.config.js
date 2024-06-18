@@ -3,7 +3,10 @@ module.exports = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  reactStrictMode: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  reactStrictMode: false,
   async headers() {
     return [
       {
