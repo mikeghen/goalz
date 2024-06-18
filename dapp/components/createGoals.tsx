@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI, GOALZ_ABI } from '../config/constants';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useRouter } from 'next/router'; // Import useRouter from next/router
 import { Address } from 'viem';
 
 const EmojiSelect = ({ onSelect, selectedEmoji }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedEmoji: string }) => {
@@ -47,6 +48,7 @@ const ExampleGoalCard = ({ goal, emoji, token, onStart }: { goal: string, emoji:
 
 const CreateGoals = () => {
     const { address } = useAccount();
+    const router = useRouter(); // Initialize useRouter
     const [setGoalLoading, setSetGoalLoading] = useState(false);
     const [approveLoading, setApproveLoading] = useState(false); // Add loading state for Approve button
     const [automateLoading, setAutomateLoading] = useState(false);
@@ -69,12 +71,12 @@ const CreateGoals = () => {
     const automateDeposit = useAutomateDeposit();
     const approve = useContractApprove();
 
-    const receiptData = useWaitForTransactionReceipt({hash});
+    const receiptData = useWaitForTransactionReceipt({ hash });
 
     useEffect(() => {
         if (receiptData.data) {
             // Loop over all the logs and try to parse the log, if it's parsed success, then set the goal id, if not, move to check the next log
-            for(let i = 0; i < receiptData.data.logs.length; i++) {
+            for (let i = 0; i < receiptData.data.logs.length; i++) {
                 const log = receiptData.data.logs[i];
                 // This line may throw a TransactionExecutionError, use a try catch block to handle it
                 try {
@@ -111,9 +113,9 @@ const CreateGoals = () => {
     useEffect(() => {
         if (allowance.data) {
 
-          if( ethers.BigNumber.from(allowance.data).gte(ethers.constants.MaxUint256.div(2))) {
-            setIsApproved(true);
-          }
+            if (ethers.BigNumber.from(allowance.data).gte(ethers.constants.MaxUint256.div(2))) {
+                setIsApproved(true);
+            }
         } else {
             setIsApproved(false);
         }
@@ -141,16 +143,10 @@ const CreateGoals = () => {
         try {
             setSetGoalLoading(true);
             let resHash = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix) as any;
-            console.log("resHash", resHash);
             setHash(resHash);
-            // Sleep for 1.5 seconds to wait for the transaction to be mined
-            while (!goalId) {
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-            console.log("goalId", goalId);
-
             if (!showDepositForm) {
                 toast.success('Goal set!');
+                router.push('/'); // Redirect to goal view page
             }
         } catch (error) {
             toast.error('Error setting goal.');
@@ -246,6 +242,7 @@ const CreateGoals = () => {
             setAutomateLoading(true);
             await automateDeposit(goalId, depositAmountBigNumber, frequencySeconds);
             toast.success(`${depositAmount} ${unit} will be deposited every ${frequencyAmount} ${frequencyUnit} toward your goal.`);
+            router.push('/'); 
         } catch (error) {
             toast.error('Error automating deposit.');
             console.log("automateDeposit error:", error);
@@ -402,7 +399,7 @@ const CreateGoals = () => {
                             <br />
                             {goalCreated ? (
                                 showDepositForm && isApproved ? (
-                                    <button className="btn btn-primary" onClick={automateDepositHandler} disabled={automateLoading}>
+                                    <button className="btn btn-warning" onClick={automateDepositHandler} disabled={automateLoading}>
                                         {automateLoading ? (
                                             <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                         ) : (
