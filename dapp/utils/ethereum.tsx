@@ -55,14 +55,7 @@ export const useSetGoal = () => {
             args: [what, why, targetAmount, targetDate, depositToken]
         });
 
-        // Use the provider to look up the event log from that txnHash
-        const provider = await getProvider();
-        await provider.waitForTransaction(txnHash);
-        const receipt = await provider.getTransactionReceipt(txnHash);
-        const log = receipt.logs[1];
-        const parsedLog = new ethers.utils.Interface(GOALZ_ABI).parseLog(log);
-        const goalId = parsedLog.args.tokenId;
-        return goalId;
+        return txnHash;
     };
 
     return setGoal;

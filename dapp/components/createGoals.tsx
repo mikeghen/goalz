@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAutomateDeposit, useContractApprove, useSetGoal } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
-import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI } from '../config/constants';
-import { useAccount, useReadContract, useWriteContract } from 'wagmi';
+import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI, GOALZ_ABI } from '../config/constants';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { type UseReadContractParameters } from 'wagmi'
 import { Address } from 'viem';
+import { use } from 'chai';
 
 const EmojiSelect = ({ onSelect, selectedEmoji }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedEmoji: string }) => {
     const emojis = ['😀', '🎉', '💰', '🏖️', '🚀', '❤️', '🌟', '💻', '🚗']; // Add more emojis as needed
@@ -62,9 +63,33 @@ const CreateGoals = () => {
     const [why, setWhy] = useState('');
     const [targetAmount, setTargetAmount] = useState('');
     const [isApproved, setIsApproved] = useState(false);
+    const [goalId, setGoalId] = useState<ethers.BigNumber>();
+    const [hash, setHash] = useState<Address>();
     const setGoal = useSetGoal();
     const automateDeposit = useAutomateDeposit();
     const approve = useContractApprove();
+
+    const receiptData = useWaitForTransactionReceipt({hash});
+
+    useEffect(() => {
+        if (receiptData.data) {
+            // Loop over all the logs and try to parse the log, if it's parsed success, then set the goal id, if not, move to check the next log
+            for(let i = 0; i < receiptData.data.logs.length; i++) {
+                const log = receiptData.data.logs[i];
+                // This line may throw a TransactionExecutionError, use a try catch block to handle it
+                try {
+                    const parsedLog = new ethers.utils.Interface(GOALZ_ABI).parseLog(log);
+                    if (parsedLog.name === "GoalCreated") {
+                        console.log("GoalId:", parsedLog.args.goalId.toString());
+                        setGoalId(parsedLog.args.goalId);
+                        break;
+                    }
+                } catch (error) {
+                    console.log("Error parsing log:", error);
+                }
+            }
+        }
+    }, [receiptData.data]);
 
     const allowance = useReadContract({
         address: depositToken,
@@ -112,7 +137,12 @@ const CreateGoals = () => {
 
         try {
             setSetGoalLoading(true);
-            const goalId = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix) as any;
+            let resHash = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix) as any;
+            console.log("resHash", resHash);
+            setHash(resHash);
+            // Sleep for 1.5 seconds to wait for the transaction to be mined
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            console.log("goalId", goalId);
 
             if (showDepositForm && isApproved) {
                 toast.success(`Goal set! Automating deposit...`);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import { useAccount, useReadContract } from "wagmi";
+import { useAccount, useReadContract, useWaitForTransactionReceipt } from "wagmi";
 import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from "../config/constants";
 import { useDeposit, useCancelAutomatedDeposit, useWithdraw, useAutomateDeposit, useContractApprove } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
@@ -8,6 +8,15 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { Address } from "viem";
 import { formatEther } from "ethers/lib/utils";
+import { useTransactionReceipt } from 'wagmi'
+
+function ensureHexFormat(value: string): `0x${string}` {
+    if (!value.startsWith("0x")) {
+      return `0x${value}` as `0x${string}`;
+    }
+    return value as `0x${string}`;
+  }
+
 
 interface GoalData {
     what: string;
@@ -142,7 +151,6 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                 targetDate: formatDate(targetDate),
                 completed:gData[6],
             }));
-            console.log("goal.data.completed",gData);
         }
     }, [goal.data]);
 

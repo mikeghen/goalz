@@ -3,7 +3,6 @@ import { createConfig, http } from 'wagmi'
 import { base, baseSepolia } from 'wagmi/chains'
 import {
   rainbowWallet,
-  walletConnectWallet,
   coinbaseWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 
@@ -11,7 +10,7 @@ const connectors = connectorsForWallets(
   [
     {
       groupName: 'Recommended',
-      wallets: [coinbaseWallet, rainbowWallet, walletConnectWallet],
+      wallets: [coinbaseWallet, rainbowWallet],
     },
   ],
   {
