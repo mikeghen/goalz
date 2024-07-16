@@ -126,7 +126,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         uint amount = goal.currentAmount;
         goal.currentAmount = 0;
         goalzTokens[goal.depositToken].burn(msg.sender, amount);
-        IERC20(goal.depositToken).transfer(msg.sender, amount);
+        IERC20(goal.depositToken).safeTransfer(msg.sender, amount);
 
         emit WithdrawMade(msg.sender, goalId, amount);
     }
@@ -195,7 +195,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
     }
 
     function _deposit(address account, SavingsGoal storage goal, uint amount) internal {
-        IERC20(goal.depositToken).transferFrom(account, address(this), amount);
+        IERC20(goal.depositToken).safeTransferFrom(account, address(this), amount);
         goalzTokens[goal.depositToken].mint(account, amount);
         goal.currentAmount += amount;
     }
