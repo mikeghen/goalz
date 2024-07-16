@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -11,6 +12,7 @@ import "hardhat/console.sol";
 
 contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
     using Counters for Counters.Counter;
+    using SafeERC20 for IERC20;
     Counters.Counter private _tokenIdCounter;
 
     struct SavingsGoal {
