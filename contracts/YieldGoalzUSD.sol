@@ -64,7 +64,7 @@ contract YieldGoalzUSD is ERC20, Ownable {
         deposits[account].amount -= amount;
         // Burn tokens and return yield tokens
         _burn(account, amount);
-        safeToken.transfer(account, amount);
+        safeToken.safeTransfer(account, amount);
     }
 
     // TODO: Claim yield method
