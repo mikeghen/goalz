@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract YieldGoalzUSD is ERC20, Ownable {
+    using SafeERC20 for IERC20;
 
     IERC20 public depositToken;
 
@@ -29,7 +31,8 @@ contract YieldGoalzUSD is ERC20, Ownable {
      }
 
     function mint(address account, uint256 amount) external onlyOwner {
-        yieldToken.transferFrom(msg.sender, address(this), amount);
+        IERC20 safeToken = IERC20(yieldToken);
+        safeToken.safeTransferFrom(msg.sender, address(this), amount);
         // If this user has a deposit
         if (deposits[account].amount > 0) {
             // Calculate the yield since the last time the yield was calculated
@@ -49,6 +52,7 @@ contract YieldGoalzUSD is ERC20, Ownable {
     }
 
     function burn(address account, uint256 amount) external onlyOwner {
+        IERC20 safeToken = IERC20(yieldToken);
         // Calculate the yield since the last time the yield was calculated
         _increaseYield();
         // Calculate the yield for this user
@@ -60,7 +64,7 @@ contract YieldGoalzUSD is ERC20, Ownable {
         deposits[account].amount -= amount;
         // Burn tokens and return yield tokens
         _burn(account, amount);
-        yieldToken.transfer(account, amount);
+        safeToken.safeTransfer(account, amount);
     }
 
     // TODO: Claim yield method

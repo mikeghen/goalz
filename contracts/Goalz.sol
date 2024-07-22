@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -11,6 +12,7 @@ import "hardhat/console.sol";
 
 contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
     using Counters for Counters.Counter;
+    using SafeERC20 for IERC20;
     Counters.Counter private _tokenIdCounter;
 
     struct SavingsGoal {
@@ -124,7 +126,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         uint amount = goal.currentAmount;
         goal.currentAmount = 0;
         goalzTokens[goal.depositToken].burn(msg.sender, amount);
-        IERC20(goal.depositToken).transfer(msg.sender, amount);
+        IERC20(goal.depositToken).safeTransfer(msg.sender, amount);
 
         emit WithdrawMade(msg.sender, goalId, amount);
     }
@@ -193,7 +195,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
     }
 
     function _deposit(address account, SavingsGoal storage goal, uint amount) internal {
-        IERC20(goal.depositToken).transferFrom(account, address(this), amount);
+        IERC20(goal.depositToken).safeTransferFrom(account, address(this), amount);
         goalzTokens[goal.depositToken].mint(account, amount);
         goal.currentAmount += amount;
     }
