@@ -7,11 +7,11 @@
 ## Base Mainnet
 | Contract | Address |
 | -------- | ------- |
-| USDC | [0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913](https://mainnet.basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913) |
-| WETH | [0x4200000000000000000000000000000000000006](https://mainnet.basescan.org/address/0x4200000000000000000000000000000000000006) |
-| Goalz | [0x8afc985f3C23DdcA21B70Ecc65B3570d265AaeCf](https://mainnet.basescan.org/address/0x8afc985f3C23DdcA21B70Ecc65B3570d265AaeCf) |
-| Goalz USD Coin (glzUSDC) | [0xbce33106991d18CAad8c655DB79617b7be424084](https://mainnet.basescan.org/address/0xbce33106991d18CAad8c655DB79617b7be424084) |
-| Goalz Wrapped Ether (glzWETH) | [0x1fD2FC732e38B33bc282Ce248e948d6c3108f237](https://mainnet.basescan.org/address/0x1fD2FC732e38B33bc282Ce248e948d6c3108f237) |
+| USDC | [0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913) |
+| WETH | [0x4200000000000000000000000000000000000006](https://basescan.org/address/0x4200000000000000000000000000000000000006) |
+| Goalz | [0x8afc985f3C23DdcA21B70Ecc65B3570d265AaeCf](https://basescan.org/address/0x8afc985f3C23DdcA21B70Ecc65B3570d265AaeCf) |
+| Goalz USD Coin (glzUSDC) | [0xbce33106991d18CAad8c655DB79617b7be424084](https://basescan.org/address/0xbce33106991d18CAad8c655DB79617b7be424084) |
+| Goalz Wrapped Ether (glzWETH) | [0x1fD2FC732e38B33bc282Ce248e948d6c3108f237](https://basescan.org/address/0x1fD2FC732e38B33bc282Ce248e948d6c3108f237) |
 
 
 ### Base Sepolia Testnet 
