@@ -4,6 +4,15 @@
 
 ## Network Deployment Addresses
 
+## Arbitrum One 
+| Contract | Address |
+| -------- | ------- |
+| USDC | [0xaf88d065e77c8cC2239327C5EDb3A432268e5831](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831) |
+| WETH | [0x82aF49447D8a07e3bd95BD0d56f35241523fBab1](https://arbiscan.io/address/0x82aF49447D8a07e3bd95BD0d56f35241523fBab1) |
+| Goalz | [0xD73EA7F07678B9f1C524C77cabc82fbEd4525EeA](https://arbiscan.io/address/0xD73EA7F07678B9f1C524C77cabc82fbEd4525EeA) |
+| Goalz USD Coin (glzUSDC) | [0xAc800270c1FCEE96691DD7e5f851d2093f1481C8](https://arbiscan.io/address/0xAc800270c1FCEE96691DD7e5f851d2093f1481C8) |
+| Goalz Wrapped Ether (glzWETH) | [0xC8C2CA42634bD0fE4FeE63196A57bf74c14117df](https://arbiscan.io/address/0xC8C2CA42634bD0fE4FeE63196A57bf74c14117df) |
+
 ## Base Mainnet
 | Contract | Address |
 | -------- | ------- |
