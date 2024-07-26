@@ -1,44 +1,43 @@
 import { useState, useEffect } from 'react';
-import { useAccount, useReadContract, useBlockNumber } from "wagmi";
-import { GOALZ_USDC_ADDRESS, GOALZ_WETH_ADDRESS, USDC_ADDRESS, WETH_ADDRESS, ERC20_ABI } from '../config/constants';
+import { useAccount, useReadContract, useBlockNumber } from 'wagmi';
+import { ERC20_ABI, getNetworkAddresses } from '../config/constants';
 import { formatTokenAmount } from '../utils/helpers';
-import Link from "next/link";
-import { useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 
-const Wallet: React.FC<{}> = () => {
-  const { address } = useAccount();
-  const queryClient = useQueryClient();
+const Wallet: React.FC = () => {
+  const { address, chain } = useAccount();
   const { data: blockNumber } = useBlockNumber({ watch: true });
 
-  const [goalzUsdBalance, setGoalzUsdBalance] = useState("0.00");
-  const [goalzWethBalance, setGoalzWethBalance] = useState("0.00");
-  const [usdcBalance, setUsdcBalance] = useState("0.00");
-  const [wethBalance, setWethBalance] = useState("0.00");
+  const [goalzUsdBalance, setGoalzUsdBalance] = useState('0.00');
+  const [goalzWethBalance, setGoalzWethBalance] = useState('0.00');
+  const [usdcBalance, setUsdcBalance] = useState('0.00');
+  const [wethBalance, setWethBalance] = useState('0.00');
+
+  const addresses = chain ? getNetworkAddresses(chain.id) : {};
 
   const goalzUsdBalanceData = useReadContract({
-    address: GOALZ_USDC_ADDRESS,
+    address: addresses.GOALZ_USDC_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [address],
   });
 
   const goalzWethBalanceData = useReadContract({
-    address: GOALZ_WETH_ADDRESS,
+    address: addresses.GOALZ_WETH_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [address],
   });
 
   const usdcBalanceData = useReadContract({
-    address: USDC_ADDRESS,
+    address: addresses.USDC_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [address],
-
   });
 
   const wethBalanceData = useReadContract({
-    address: WETH_ADDRESS,
+    address: addresses.WETH_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [address],
@@ -105,7 +104,7 @@ const Wallet: React.FC<{}> = () => {
           </div>
         </div>
       </div>
-      <br/>
+      <br />
       <style jsx>{`
         .rotating-hue {
           background-image: -webkit-linear-gradient(92deg, #f35626, #feab3a);

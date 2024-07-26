@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from "wagmi";
-import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from "../config/constants";
+import {GOALZ_ABI, ERC20_ABI, getNetworkAddresses } from "../config/constants";
 import { useDeposit, useCancelAutomatedDeposit, useWithdraw, useAutomateDeposit, useContractApprove } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
@@ -32,7 +32,7 @@ interface GoalData {
 };
 
 const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
-    const { address } = useAccount();
+    const { address, chain } = useAccount();
     const [goalId, setGoalId] = useState(0);
     const [isExpandedDeposit, setIsExpandedDeposit] = useState(false);
     const [isExpandedAutomate, setIsExpandedAutomate] = useState(false);
@@ -66,16 +66,18 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     const deposit = useDeposit();
     const withdraw = useWithdraw();
 
+    const addresses = chain ? getNetworkAddresses(chain.id) : {};
+
     // Get Goal Data
     const goal = useReadContract({
-        address: GOALZ_ADDRESS,
+        address: addresses.GOALZ_ADDRESS,
         abi: GOALZ_ABI,
         functionName: "savingsGoals",
         args: [goalId],
     });
 
     const goalTokenData = useReadContract({
-        address: GOALZ_ADDRESS,
+        address: addresses.GOALZ_ADDRESS,
         abi: GOALZ_ABI,
         functionName: "tokenOfOwnerByIndex",
         args: [address, goalIndex],
@@ -88,7 +90,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     }, [goalTokenData.data]);
 
     const automatedDeposit = useReadContract({
-        address: GOALZ_ADDRESS,
+        address: addresses.GOALZ_ADDRESS,
         abi: GOALZ_ABI,
         functionName: "automatedDeposits",
         args: [goalId],
@@ -98,7 +100,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         address: goalData.depositToken,
         abi: ERC20_ABI,
         functionName: "allowance",
-        args: [address, GOALZ_ADDRESS],
+        args: [address, addresses.GOALZ_ADDRESS],
     });
 
     useEffect(() => {
@@ -120,7 +122,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
             ? 0 
             : ethers.BigNumber.from(gData[3]).mul(100).div(ethers.BigNumber.from(gData[2])).toNumber();
             let depositTokenSymbol = "";
-            if (gData[5] == USDC_ADDRESS) {
+            if (gData[5] == addresses.USDC_ADDRESS) {
                 depositTokenSymbol = "USDC";
             } else {
                 depositTokenSymbol = "WETH";
@@ -130,7 +132,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
             let currentAmount = '0';
             let targetAmount = '0';
             let decimals = 18;
-            if (gData[5] == USDC_ADDRESS) {
+            if (gData[5] == addresses.USDC_ADDRESS) {
                 decimals = 6;
                 targetAmount = formatTokenAmount(gData[3], decimals, 0);
                 currentAmount = formatTokenAmount(gData[2], decimals, 0);
@@ -160,7 +162,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
             if (automatedDepositData[0]) {
                 const automatedDepositDate = new Date(Number(automatedDepositData[2])*1000);
                 let decimals = 18;
-                if (goalData.depositToken == USDC_ADDRESS) {
+                if (goalData.depositToken == addresses.USDC_ADDRESS) {
                     decimals = 6;
                 }
 
@@ -209,7 +211,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         // Try to make a deposit to this goalIndex
         try {
             setIsDepositLoading(true);
-            if(goalData.depositToken == USDC_ADDRESS) {
+            if(goalData.depositToken == addresses.USDC_ADDRESS) {
                 await deposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(amount, 6));
             } else {
                 await deposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(amount, 18));
@@ -269,7 +271,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         try {
             setIsAutomateDepositLoading(true);
             let decimals = 18;
-            if (goalData.depositToken == USDC_ADDRESS) {
+            if (goalData.depositToken == addresses.USDC_ADDRESS) {
                 decimals = 6;
             }
             await automateDeposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(autoDepositAmount, decimals), frequencySeconds);

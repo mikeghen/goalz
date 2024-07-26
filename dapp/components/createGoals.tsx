@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAutomateDeposit, useContractApprove, useSetGoal } from '../utils/ethereum';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
-import { USDC_ADDRESS, WETH_ADDRESS, GOALZ_ADDRESS, ERC20_ABI, GOALZ_ABI } from '../config/constants';
+import { ERC20_ABI, GOALZ_ABI, getNetworkAddresses } from '../config/constants';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useRouter } from 'next/router'; // Import useRouter from next/router
 import { Address } from 'viem';
@@ -22,11 +22,11 @@ const EmojiSelect = ({ onSelect, selectedEmoji }: { onSelect: (event: React.Chan
     );
 };
 
-const TokenSelect = ({ onSelect, selectedToken }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedToken: string }) => {
+const TokenSelect = ({ onSelect, selectedToken, addresses }: { onSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void, selectedToken: string, addresses: any }) => {
     return (
         <select className="form-control" onChange={onSelect} value={selectedToken}>
-            <option value={USDC_ADDRESS}>USDC</option>
-            <option value={WETH_ADDRESS}>WETH</option>
+            <option value={addresses.USDC_ADDRESS}>USDC</option>
+            <option value={addresses.WETH_ADDRESS}>WETH</option>
         </select>
     );
 };
@@ -47,7 +47,7 @@ const ExampleGoalCard = ({ goal, emoji, token, onStart }: { goal: string, emoji:
 };
 
 const CreateGoals = () => {
-    const { address } = useAccount();
+    const { address, chain } = useAccount();
     const router = useRouter(); // Initialize useRouter
     const [setGoalLoading, setSetGoalLoading] = useState(false);
     const [approveLoading, setApproveLoading] = useState(false); // Add loading state for Approve button
@@ -58,7 +58,7 @@ const CreateGoals = () => {
     const [frequencyAmount, setFrequencyAmount] = useState('');
     const [frequencyUnit, setFrequencyUnit] = useState("days");
     const [emoji, setEmoji] = useState('');
-    const [depositToken, setDepositToken] = useState<Address>(USDC_ADDRESS);
+    const [depositToken, setDepositToken] = useState<Address>();
     const [unit, setUnit] = useState('USDC');
     const [what, setWhat] = useState('');
     const [why, setWhy] = useState('');
@@ -72,6 +72,8 @@ const CreateGoals = () => {
     const approve = useContractApprove();
 
     const receiptData = useWaitForTransactionReceipt({ hash });
+
+    const addresses = chain ? getNetworkAddresses(chain.id) : {};
 
     useEffect(() => {
         if (receiptData.data) {
@@ -100,14 +102,14 @@ const CreateGoals = () => {
         address: depositToken,
         abi: ERC20_ABI,
         functionName: "allowance",
-        args: [address, GOALZ_ADDRESS],
+        args: [address, addresses.GOALZ_ADDRESS],
     });
 
     const exampleGoals = [
-        { goal: 'Save for a trip', emoji: '🏖️', token: USDC_ADDRESS, amount: '' },
-        { goal: 'Save for a macbook', emoji: '💻', token: USDC_ADDRESS, amount: '' },
-        { goal: 'Save for a car', emoji: '🚗', token: USDC_ADDRESS, amount: '' },
-        { goal: 'Save 1 ETH', emoji: '💰', token: WETH_ADDRESS, amount: '1' },
+        { goal: 'Save for a trip', emoji: '🏖️', token: addresses.USDC_ADDRESS, amount: '' },
+        { goal: 'Save for a macbook', emoji: '💻', token: addresses.USDC_ADDRESS, amount: '' },
+        { goal: 'Save for a car', emoji: '🚗', token: addresses.USDC_ADDRESS, amount: '' },
+        { goal: 'Save 1 ETH', emoji: '💰', token: addresses.WETH_ADDRESS, amount: '1' },
     ];
 
     useEffect(() => {
@@ -121,6 +123,12 @@ const CreateGoals = () => {
         }
     }, [allowance.data]);
 
+    useEffect(() => {
+        if (addresses.USDC_ADDRESS && address) {
+            setDepositToken(addresses.USDC_ADDRESS);
+        }
+    }, [addresses.USDC_ADDRESS, address]);
+
     const handleCreateGoal = async () => {
         console.log("Create Goal");
         const what = (document.getElementById("what") as HTMLInputElement).value;
@@ -128,7 +136,7 @@ const CreateGoals = () => {
         const targetAmount = (document.getElementById("targetAmount") as HTMLInputElement).value;
         const targetDate = (document.getElementById("targetDate") as HTMLInputElement).value;
         let decimals = 18;
-        if (depositToken === USDC_ADDRESS) {
+        if (depositToken === addresses.USDC_ADDRESS) {
             decimals = 6;
         }
         const targetAmountBigNumber = ethers.BigNumber.from(targetAmount).mul(ethers.BigNumber.from(10).pow(decimals));
@@ -178,10 +186,10 @@ const CreateGoals = () => {
     const handleTokenSelectChange = (event: any) => {
         const selectedValue = event.target.value;
         console.log("depositToken", selectedValue)
-        if (selectedValue === USDC_ADDRESS) {
+        if (selectedValue === addresses.USDC_ADDRESS) {
             setUnit("USDC");
         }
-        if (selectedValue === WETH_ADDRESS) {
+        if (selectedValue === addresses.WETH_ADDRESS) {
             setUnit("WETH");
         }
         setDepositToken(selectedValue);
@@ -211,7 +219,7 @@ const CreateGoals = () => {
         if (!goalId) return;
 
         let depositAmountBigNumber;
-        if (depositToken === USDC_ADDRESS) {
+        if (depositToken === addresses.USDC_ADDRESS) {
             depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 6);
         } else {
             depositAmountBigNumber = ethers.utils.parseUnits(depositAmount, 18);
@@ -256,7 +264,7 @@ const CreateGoals = () => {
         (document.getElementById("targetAmount") as HTMLInputElement).value = amount;
         setEmoji(emoji);
         setDepositToken(token);
-        setUnit(token === USDC_ADDRESS ? "USDC" : "WETH");
+        setUnit(token === addresses.USDC_ADDRESS ? "USDC" : "WETH");
     };
 
     return (
@@ -296,7 +304,7 @@ const CreateGoals = () => {
                             <br />
                             <div className="form-group">
                                 <label htmlFor="depositTokenInput">What token do you want to save?</label>
-                                <TokenSelect onSelect={handleTokenSelectChange} selectedToken={depositToken} />
+                                <TokenSelect onSelect={handleTokenSelectChange} selectedToken={depositToken} addresses={addresses} />
                             </div>
                             <br />
                             <div className="form-group">

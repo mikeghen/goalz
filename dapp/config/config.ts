@@ -1,6 +1,6 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { createConfig, http } from 'wagmi'
-import { base, baseSepolia } from 'wagmi/chains'
+import { arbitrum, base, baseSepolia } from 'wagmi/chains'
 import {
   rainbowWallet,
   coinbaseWallet,
@@ -20,11 +20,12 @@ const connectors = connectorsForWallets(
 );
 
 export const config = createConfig({
-  chains: [base, baseSepolia],
+  chains: [arbitrum, base, baseSepolia],
   connectors: [
     ...connectors
   ],
   transports: {
+    [arbitrum.id]: http(),
     [base.id]: http(),
     [baseSepolia.id]: http(),
   },

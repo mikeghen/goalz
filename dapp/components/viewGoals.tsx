@@ -2,7 +2,7 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAccount, useReadContract } from "wagmi";
 import { ethers } from 'ethers';
-import { GOALZ_ADDRESS, ERC20_ABI, GOALZ_ABI } from '../config/constants';
+import { ERC20_ABI, GOALZ_ABI, getNetworkAddresses } from '../config/constants';
 import { formatTokenAmount } from '../utils/helpers';
 import GoalRow from './goalRow';
 import { use } from 'chai';
@@ -10,13 +10,16 @@ import { useSetGoal } from '../utils/ethereum';
 
 const ViewGoals = () => {
 
-    const {address} = useAccount();
+    const {address, chain} = useAccount();
     const [goalCount, setGoalCount] = useState(0);
     const setGoal = useSetGoal();
+
+    const addresses = chain ? getNetworkAddresses(chain.id) : {};
+
     // ---
     // Get the goals that the user has created
     const userGoalzCount = useReadContract({
-        address: GOALZ_ADDRESS,
+        address: addresses.GOALZ_ADDRESS,
         abi: GOALZ_ABI,
         functionName: 'balanceOf',
         args: [address],
