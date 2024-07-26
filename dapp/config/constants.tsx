@@ -7,11 +7,11 @@ export const GOALZ_ABI = GOALZ
 
 const networkAddresses = {
   [arbitrum.id]: {
-    USDC_ADDRESS: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // Arbitrum USDC
-    WETH_ADDRESS: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1', // Arbitrum WETH
-    GOALZ_USDC_ADDRESS: '0x...', // Replace with actual Arbitrum address
-    GOALZ_WETH_ADDRESS: '0x...', // Replace with actual Arbitrum address
-    GOALZ_ADDRESS: '0x...', // Replace with actual Arbitrum address
+    USDC_ADDRESS: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', 
+    WETH_ADDRESS: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1', 
+    GOALZ_USDC_ADDRESS: '0xAc800270c1FCEE96691DD7e5f851d2093f1481C8',
+    GOALZ_WETH_ADDRESS: '0xC8C2CA42634bD0fE4FeE63196A57bf74c14117df',
+    GOALZ_ADDRESS: '0xD73EA7F07678B9f1C524C77cabc82fbEd4525EeA', 
   },
   [base.id]: {
     USDC_ADDRESS: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
