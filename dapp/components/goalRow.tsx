@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from "wagmi";
-import {GOALZ_ABI, ERC20_ABI, getNetworkAddresses } from "../config/constants";
+import { GOALZ_ABI, ERC20_ABI, getNetworkAddresses } from "../config/constants";
 import { useDeposit, useCancelAutomatedDeposit, useWithdraw, useAutomateDeposit, useContractApprove } from "../utils/ethereum";
 import { formatTokenAmount } from "../utils/helpers";
 import Link from "next/link";
@@ -12,10 +12,10 @@ import { useTransactionReceipt } from 'wagmi'
 
 function ensureHexFormat(value: string): `0x${string}` {
     if (!value.startsWith("0x")) {
-      return `0x${value}` as `0x${string}`;
+        return `0x${value}` as `0x${string}`;
     }
     return value as `0x${string}`;
-  }
+}
 
 
 interface GoalData {
@@ -117,10 +117,10 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
     useEffect(() => {
         if (goal.data) {
             const gData = goal.data as any;
-            const targetDate = new Date(Number(gData[4])*1000); 
-            const goalProgress = ethers.BigNumber.from(gData[2]).isZero() 
-            ? 0 
-            : ethers.BigNumber.from(gData[3]).mul(100).div(ethers.BigNumber.from(gData[2])).toNumber();
+            const targetDate = new Date(Number(gData[4]) * 1000);
+            const goalProgress = ethers.BigNumber.from(gData[2]).isZero()
+                ? 0
+                : ethers.BigNumber.from(gData[3]).mul(100).div(ethers.BigNumber.from(gData[2])).toNumber();
             let depositTokenSymbol = "";
             if (gData[5] == addresses.USDC_ADDRESS) {
                 depositTokenSymbol = "USDC";
@@ -134,25 +134,26 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
             let decimals = 18;
             if (gData[5] == addresses.USDC_ADDRESS) {
                 decimals = 6;
-                targetAmount = formatTokenAmount(gData[3], decimals, 0);
-                currentAmount = formatTokenAmount(gData[2], decimals, 0);
+                currentAmount = formatTokenAmount(gData[3], decimals, 0);
+                targetAmount = formatTokenAmount(gData[2], decimals, 0);
             } else {
-                targetAmount = formatTokenAmount(gData[3], decimals, 3);
-                currentAmount = formatTokenAmount(gData[2], decimals, 3);
+                currentAmount = formatTokenAmount(gData[3], decimals, 3);
+                targetAmount = formatTokenAmount(gData[2], decimals, 3);
             }
 
             // Update the goal data state to add the goal data
             setGoalData((prevGoalData) => ({
                 ...prevGoalData,
-                what:gData[0],
-                why:gData[1],
+                what: gData[0],
+                why: gData[1],
                 currentAmount: currentAmount,
                 depositToken: gData[5],
                 depositTokenSymbol: depositTokenSymbol,
                 targetAmount: targetAmount,
                 targetDate: formatDate(targetDate),
-                completed:gData[6],
+                completed: gData[6],
             }));
+            console.log("goal data", goalData);
         }
     }, [goal.data]);
 
@@ -160,7 +161,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         if (automatedDeposit.data && !automatedDeposit.error) {
             const automatedDepositData = automatedDeposit.data as any;
             if (automatedDepositData[0]) {
-                const automatedDepositDate = new Date(Number(automatedDepositData[2])*1000);
+                const automatedDepositDate = new Date(Number(automatedDepositData[2]) * 1000);
                 let decimals = 18;
                 if (goalData.depositToken == addresses.USDC_ADDRESS) {
                     decimals = 6;
@@ -211,10 +212,10 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         // Try to make a deposit to this goalIndex
         try {
             setIsDepositLoading(true);
-            if(goalData.depositToken == addresses.USDC_ADDRESS) {
-                await deposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(amount, 6));
+            if (goalData.depositToken == addresses.USDC_ADDRESS) {
+                await deposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(amount, 6), addresses.GOALZ_ADDRESS);
             } else {
-                await deposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(amount, 18));
+                await deposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(amount, 18), addresses.GOALZ_ADDRESS);
             }
             toast.success(`Deposited ${amount} toward ${goalData.what}!`);
         } catch (error) {
@@ -233,7 +234,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         console.log(ethers.utils.parseUnits(amount, 18));
         try {
             setIsApproveLoading(true);
-            await approve(goalData.depositToken, ethers.utils.parseUnits(amount, 18));
+            await approve(goalData.depositToken, addresses.GOALZ_ADDRESS);
             toast.success('Approved!');
         } catch (error) {
             console.log("approve error:", error);
@@ -274,7 +275,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
             if (goalData.depositToken == addresses.USDC_ADDRESS) {
                 decimals = 6;
             }
-            await automateDeposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(autoDepositAmount, decimals), frequencySeconds);
+            await automateDeposit(ethers.BigNumber.from(goalId), ethers.utils.parseUnits(autoDepositAmount, decimals), frequencySeconds, addresses.GOALZ_ADDRESS);
             toast.success(`Automated deposit of ${autoDepositAmount} every ${autoDepositFrequency} ${frequencyUnit}.`);
         } catch (error) {
             console.log("automateDeposit error:", error);
@@ -291,7 +292,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         try {
             setIsWithdrawLoading(true);
             console.log(goalIndex)
-            await withdraw(ethers.BigNumber.from(goalId));
+            await withdraw(ethers.BigNumber.from(goalId), addresses.GOALZ_ADDRESS);
             toast.success(`Withdrew ${goalData.currentAmount} from ${goalData.what}!`);
         } catch (error) {
             console.log("withdraw error:", error);
@@ -307,7 +308,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
         try {
             setIsCancelAutomateLoading(true);
 
-            await cancelAutomatedDeposit(ethers.BigNumber.from(goalId));
+            await cancelAutomatedDeposit(ethers.BigNumber.from(goalId), addresses.GOALZ_ADDRESS);
             toast.success(`Canceled automated deposit for ${goalData.what}!`);
             // Update the UI state
             setGoalData((prevGoalData) => ({
@@ -337,9 +338,9 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                     )}
                 </td>
                 <td>{goalData.completed ? (
-                    <span>{goalData.currentAmount} {goalData.depositTokenSymbol}</span>
+                    <span>{goalData.targetAmount} {goalData.depositTokenSymbol}</span>
                 ) : (
-                    <span>{goalData.targetAmount} / {goalData.currentAmount} {goalData.depositTokenSymbol}</span>
+                    <span>{goalData.currentAmount} / {goalData.targetAmount} {goalData.depositTokenSymbol}</span>
                 )}</td>
                 <td>{goalData.targetDate}</td>
                 <td>
@@ -350,20 +351,26 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                             <Link href="">
                                 <button className="btn btn-outline-success btn-sm" onClick={toggleExpansionDeposit} type="button">Deposit</button>
                             </Link>
-                            &nbsp; &nbsp;
-                            { goalData.currentAmount > "0" ? (
-                                <Link href="">
-                                    <button className="btn btn-outline-danger btn-sm" type="button" onClick={handleWithdraw}>
-                                        {isWithdrawLoading ? (
-                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                        ) : (
-                                            'Withdraw'
-                                        )}
-                                    </button>
-                                </Link>
-                            ) : (
-                                <></>
-                            )}
+                        </>
+                    )}
+                    &nbsp; &nbsp;
+                    {Number(goalData.currentAmount) != 0 ? (
+                        <Link href="">
+                            <button className="btn btn-outline-danger btn-sm" type="button" onClick={handleWithdraw}>
+                                {isWithdrawLoading ? (
+                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                ) : (
+                                    'Withdraw'
+                                )}
+                            </button>
+                        </Link>
+                    ) : (
+                        <></>
+                    )}
+                    {goalData.completed ? (
+                        <></>
+                    ) : (
+                        <>
                             &nbsp; &nbsp;
                             {goalData.automatedDepositAmount.toString() != "" ? (
                                 <>
@@ -378,7 +385,7 @@ const GoalRow = ({ goalIndex }: { goalIndex: any }) => {
                                     </Link>
                                     &nbsp; &nbsp;
                                     🤖 {goalData.automatedDepositAmount} {goalData.depositTokenSymbol} on {goalData.automatedDepositDate}
-                                    
+
                                 </>
                             ) : (
                                 <Link href="">

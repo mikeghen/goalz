@@ -1,6 +1,7 @@
 import { BigNumber, ethers } from 'ethers';
-import { GOALZ_ADDRESS, GOALZ_ABI, USDC_ADDRESS, ERC20_ABI } from '../config/constants';
-import { useReadContract, useWriteContract } from 'wagmi';
+import { GOALZ_ABI, ERC20_ABI, getNetworkAddresses } from '../config/constants';
+import { useReadContract, useWriteContract, useAccount } from 'wagmi';
+import { Address } from 'viem';
 
 export const getProvider = async () => {
     if (typeof (window as any).ethereum !== 'undefined') {
@@ -14,14 +15,18 @@ export const getSigner = async (provider: ethers.providers.Web3Provider) => {
 
 export const useContractApprove = () => {
     const { writeContractAsync } = useWriteContract()
+    const { chain } = useAccount();
 
-    const approve = async (depositToken: string) => {
+    const addresses = chain ? getNetworkAddresses(chain.id) : {};
+
+    const approve = async (depositToken: string, contract: string) => {
+        console.log("Approving token");
         const res = await writeContractAsync({
             abi: ERC20_ABI,
             address: depositToken as any,
             functionName: "approve",
             args: [
-                GOALZ_ADDRESS,
+                contract,
                 ethers.constants.MaxUint256
             ]
         });
@@ -31,12 +36,12 @@ export const useContractApprove = () => {
 }
 export const useContractAllowance = () => {
 
-    const getAllowance = async (depositToken: string) => {
+    const getAllowance = async (depositToken: string, contract: string) => {
         const allowance = useReadContract({
             address: depositToken as any,
             abi: ERC20_ABI,
             functionName: "allowance",
-            args: [GOALZ_ADDRESS],
+            args: [contract],
         });
         return allowance;
     };
@@ -47,10 +52,10 @@ export const useContractAllowance = () => {
 export const useSetGoal = () => {
     const { writeContractAsync } = useWriteContract();
 
-    const setGoal = async (depositToken: string, what: string, why: string, targetAmount: BigNumber, targetDate: BigNumber) => {
+    const setGoal = async (depositToken: string, what: string, why: string, targetAmount: BigNumber, targetDate: BigNumber, contract: Address) => {
         const txnHash = await writeContractAsync({
             abi: GOALZ_ABI,
-            address: GOALZ_ADDRESS,
+            address: contract,
             functionName: "setGoal",
             args: [what, why, targetAmount, targetDate, depositToken]
         });
@@ -64,10 +69,10 @@ export const useSetGoal = () => {
 export const useDeleteGoal = () => {
     const { writeContractAsync } = useWriteContract();
 
-    const deleteGoal = async (goalId: BigNumber) => {
+    const deleteGoal = async (goalId: BigNumber, contract: Address) => {
         const res = await writeContractAsync({
             abi: GOALZ_ABI,
-            address: GOALZ_ADDRESS,
+            address: contract,
             functionName: "deleteGoal",
             args: [goalId]
         });
@@ -80,11 +85,11 @@ export const useDeleteGoal = () => {
 export const useDeposit = () => {
     const { writeContractAsync } = useWriteContract();
 
-    const deposit = async (goalId: BigNumber, amount: BigNumber) => {
+    const deposit = async (goalId: BigNumber, amount: BigNumber, contract: Address) => {
 
         const res = await writeContractAsync({
             abi: GOALZ_ABI,
-            address: GOALZ_ADDRESS,
+            address: contract,
             functionName: "deposit",
             args: [goalId, amount]
         });
@@ -97,10 +102,10 @@ export const useDeposit = () => {
 export const useWithdraw = () => {
     const { writeContractAsync } = useWriteContract();
 
-    const withdraw = async (goalId: BigNumber) => {
+    const withdraw = async (goalId: BigNumber, contract: Address) => {
         const res = await writeContractAsync({
             abi: GOALZ_ABI,
-            address: GOALZ_ADDRESS,
+            address: contract,
             functionName: "withdraw",
             args: [goalId]
         });
@@ -113,10 +118,10 @@ export const useWithdraw = () => {
 export const useAutomateDeposit = () => {
     const { writeContractAsync } = useWriteContract();
 
-    const automateDeposit = async (goalId: BigNumber, amount: BigNumber, frequency: BigNumber) => {
+    const automateDeposit = async (goalId: BigNumber, amount: BigNumber, frequency: BigNumber, contract: Address) => {
         const res = await writeContractAsync({
             abi: GOALZ_ABI,
-            address: GOALZ_ADDRESS,
+            address: contract,
             functionName: "automateDeposit",
             args: [goalId, amount, frequency]
         });
@@ -129,10 +134,10 @@ export const useAutomateDeposit = () => {
 export const useCancelAutomatedDeposit = () => {
     const { writeContractAsync } = useWriteContract();
 
-    const cancelAutomatedDeposit = async (goalId: BigNumber) => {
+    const cancelAutomatedDeposit = async (goalId: BigNumber, contract: Address) => {
         const res = await writeContractAsync({
             abi: GOALZ_ABI,
-            address: GOALZ_ADDRESS,
+            address: contract,
             functionName: "cancelAutomatedDeposit",
             args: [goalId]
         });
@@ -144,10 +149,10 @@ export const useCancelAutomatedDeposit = () => {
 
 export const useGetGoalData = () => {
 
-    const getGoalData = async (goalId: BigNumber) => {
+    const getGoalData = async (goalId: BigNumber, contract: Address) => {
         const data = useReadContract({
             abi: GOALZ_ABI,
-            address: GOALZ_ADDRESS,
+            address: contract,
             functionName: "savingsGoals",
             args: [goalId]
         });

@@ -139,7 +139,8 @@ const CreateGoals = () => {
         if (depositToken === addresses.USDC_ADDRESS) {
             decimals = 6;
         }
-        const targetAmountBigNumber = ethers.BigNumber.from(targetAmount).mul(ethers.BigNumber.from(10).pow(decimals));
+        // parse ether from "targetAmount" and multiply by 10^decimals
+        const targetAmountBigNumber = ethers.utils.parseUnits(targetAmount, decimals);
         const targetDateUnix = ethers.BigNumber.from(
             Math.floor(Date.now() / 1000) + (Number(targetDate) * 24 * 60 * 60)
         );
@@ -150,7 +151,7 @@ const CreateGoals = () => {
 
         try {
             setSetGoalLoading(true);
-            let resHash = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix) as any;
+            let resHash = await setGoal(depositToken, what, why, targetAmountBigNumber, targetDateUnix, addresses.GOALZ_ADDRESS) as any;
             setHash(resHash);
             if (!showDepositForm) {
                 toast.success('Goal set!');
@@ -167,7 +168,7 @@ const CreateGoals = () => {
     const handleApprove = async () => {
         try {
             setApproveLoading(true); // Start loading
-            await approve(depositToken);
+            await approve(depositToken, addresses.GOALZ_ADDRESS);
             toast.success('Approved contract to spend tokens.');
             setIsApproved(true);
         } catch (error) {
@@ -248,7 +249,7 @@ const CreateGoals = () => {
 
         try {
             setAutomateLoading(true);
-            await automateDeposit(goalId, depositAmountBigNumber, frequencySeconds);
+            await automateDeposit(goalId, depositAmountBigNumber, frequencySeconds, addresses.GOALZ_ADDRESS);
             toast.success(`${depositAmount} ${unit} will be deposited every ${frequencyAmount} ${frequencyUnit} toward your goal.`);
             router.push('/'); 
         } catch (error) {
