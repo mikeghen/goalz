@@ -21,8 +21,9 @@ describe("GoalzToken with Aave Integration", function () {
     usdc = await ERC20Mock.deploy("USD Coin", "USDC");
     usdcAddress = await usdc.getAddress();
 
+    const interestRatePerSecond = ethers.parseEther("3805175038").toString(); // Approx 12% APY
     AaveTokenMock = await ethers.getContractFactory("AaveTokenMock");
-    aaveTokenMock = await AaveTokenMock.deploy("Aave USD Coin", "aUSDC", ethers.parseEther("0.")); // Approx 12% APY
+    aaveTokenMock = await AaveTokenMock.deploy("Aave USD Coin", "aUSDC", interestRatePerSecond);
     aaveTokenMockAddress = await aaveTokenMock.getAddress();
     
     GoalzToken = await ethers.getContractFactory("GoalzToken");
@@ -38,9 +39,7 @@ describe("GoalzToken with Aave Integration", function () {
 
   describe("Deployment", function () {
     it("should deploy the contract", async function () {
-      console.log("Deployer address:", deployer.address);
       [goalzToken, usdc, aaveTokenMock] = await loadGoalzTokenFixture();
-      console.log("GoalzToken deployed to:", goalzTokenAddress);
 
       expect(await goalzToken.name()).to.equal("Goalz USD Coin");
       expect(await goalzToken.symbol()).to.equal("glzUSDC");
@@ -84,16 +83,27 @@ describe("GoalzToken with Aave Integration", function () {
   describe("Interest Accrual", function () {
     beforeEach(async function () {
       [goalzToken, usdc, aaveTokenMock] = await loadGoalzTokenFixture();
+      await aaveTokenMock.mockBalanceOf(ethers.parseEther("100"));
       await goalzToken.mint(user1.address, ethers.parseEther("100"));
     });
 
     it("should accrue interest over time", async function () {
+      // Check the interest index
+      const startInterestIndex = await goalzToken.getInterestIndex();
+
       // Increase the time to simulate interest accrual
       await network.provider.send("evm_increaseTime", [31536000]); // 1 year in seconds
       await network.provider.send("evm_mine");
 
-      const balanceWithInterest = await goalzToken.balanceOf(user1.address);
-      expect(balanceWithInterest).to.be.gt(ethers.parseEther("100"));
+      // Set mockBalance to simulate interest
+      await aaveTokenMock.mockBalanceOf(ethers.parseEther("101"));
+
+      // Update the interest
+      await goalzToken.mint(user1.address, 1);
+
+      const endInterestIndex = await goalzToken.getNextInterestIndex();
+
+      expect(endInterestIndex).to.be.gt(startInterestIndex);
     });
   });
 

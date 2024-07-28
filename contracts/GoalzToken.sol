@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "hardhat/console.sol";
 
 /// @title GoalzToken
 /// @notice ERC20 token representing a deposit into Goalz. This contract is used for tracking the principal deposits
@@ -29,6 +28,9 @@ contract GoalzToken is ERC20, Ownable {
     }
 
     function mint(address account, uint256 amount) external onlyOwner {
+        if (totalSupply() == 0) {
+            balanceCheckpoint = amount;
+        }
         _updateInterestIndex();
         _mint(account, amount);
     }
@@ -58,13 +60,12 @@ contract GoalzToken is ERC20, Ownable {
 
     function _updateInterestIndex() internal {
         // Owner is assumed to be holding aTokens 
-        uint256 currentBalance = ERC20(aToken).balanceOf(address(this));
-        if (currentBalance > balanceCheckpoint) {
-            interestIndex = interestIndex * currentBalance / balanceCheckpoint;
-            balanceCheckpoint = currentBalance;
-        }
-        balanceCheckpoint = ERC20(depositToken).balanceOf(owner());
+        uint _prevBalanceCheckpoint = balanceCheckpoint;
+        balanceCheckpoint = ERC20(aToken).balanceOf(owner());
 
+        if (balanceCheckpoint > _prevBalanceCheckpoint) {
+            interestIndex = interestIndex + (balanceCheckpoint - _prevBalanceCheckpoint) * 10 ** ERC20(aToken).decimals() / _prevBalanceCheckpoint;
+        }
     }
 
     // Disable transfers
