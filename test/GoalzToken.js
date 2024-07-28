@@ -1,17 +1,35 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 
-describe("GoalzToken", function () {
+describe("GoalzToken with Aave Integration", function () {
   let GoalzToken;
   let goalzToken;
+  let goalzTokenAddress;
+  let AaveTokenMock;
+  let aaveTokenMock;
+  let aaveTokenMockAddress;
+  let ERC20Mock;
+  let usdc;
+  let usdcAddress;
   let deployer;
   let user1;
 
   // Function that loads the GoalzToken fixture, used in each test
   const loadGoalzTokenFixture = async function () {
+    // Deploy mock ERC20 tokens for depositToken and aToken
+    ERC20Mock = await ethers.getContractFactory("ERC20Mock");
+    usdc = await ERC20Mock.deploy("USD Coin", "USDC");
+    usdcAddress = await usdc.getAddress();
+
+    AaveTokenMock = await ethers.getContractFactory("AaveTokenMock");
+    aaveTokenMock = await AaveTokenMock.deploy("Aave USD Coin", "aUSDC", ethers.parseEther("0.")); // Approx 12% APY
+    aaveTokenMockAddress = await aaveTokenMock.getAddress();
+    
     GoalzToken = await ethers.getContractFactory("GoalzToken");
-    const _goalzToken = await GoalzToken.deploy("Goalz Token", "GLZ");
-    return _goalzToken;
+    const _goalzToken = await GoalzToken.deploy("Goalz USD Coin", "glzUSDC", usdcAddress, aaveTokenMockAddress);
+    goalzTokenAddress = await _goalzToken.getAddress();
+
+    return [_goalzToken, usdc, aaveTokenMock];
   }
 
   before(async function () {
@@ -20,17 +38,21 @@ describe("GoalzToken", function () {
 
   describe("Deployment", function () {
     it("should deploy the contract", async function () {
-      goalzToken = await loadGoalzTokenFixture();
+      console.log("Deployer address:", deployer.address);
+      [goalzToken, usdc, aaveTokenMock] = await loadGoalzTokenFixture();
+      console.log("GoalzToken deployed to:", goalzTokenAddress);
 
-      expect(await goalzToken.name()).to.equal("Goalz Token");
-      expect(await goalzToken.symbol()).to.equal("GLZ");
+      expect(await goalzToken.name()).to.equal("Goalz USD Coin");
+      expect(await goalzToken.symbol()).to.equal("glzUSDC");
       expect(await goalzToken.owner()).to.equal(deployer.address);
+      expect(await goalzToken.depositToken()).to.equal(usdcAddress);
+      expect(await goalzToken.aToken()).to.equal(aaveTokenMockAddress);
     });
   });
 
   describe("Minting", function () {
     beforeEach(async function () {
-      goalzToken = await loadGoalzTokenFixture();
+      [goalzToken, usdc, aaveTokenMock] = await loadGoalzTokenFixture();
     });
 
     it("should allow the owner to mint tokens", async function () {
@@ -45,7 +67,7 @@ describe("GoalzToken", function () {
 
   describe("Burning", function () {
     beforeEach(async function () {
-      goalzToken = await loadGoalzTokenFixture();
+      [goalzToken, usdc, aaveTokenMock] = await loadGoalzTokenFixture();
       await goalzToken.mint(user1.address, ethers.parseEther("100"));
     });
 
@@ -59,9 +81,25 @@ describe("GoalzToken", function () {
     });
   });
 
+  describe("Interest Accrual", function () {
+    beforeEach(async function () {
+      [goalzToken, usdc, aaveTokenMock] = await loadGoalzTokenFixture();
+      await goalzToken.mint(user1.address, ethers.parseEther("100"));
+    });
+
+    it("should accrue interest over time", async function () {
+      // Increase the time to simulate interest accrual
+      await network.provider.send("evm_increaseTime", [31536000]); // 1 year in seconds
+      await network.provider.send("evm_mine");
+
+      const balanceWithInterest = await goalzToken.balanceOf(user1.address);
+      expect(balanceWithInterest).to.be.gt(ethers.parseEther("100"));
+    });
+  });
+
   describe("Transfers", function () {
     beforeEach(async function () {
-      goalzToken = await loadGoalzTokenFixture();
+      [goalzToken, usdc, aaveTokenMock] = await loadGoalzTokenFixture();
       await goalzToken.mint(user1.address, ethers.parseEther("100"));
     });
 
