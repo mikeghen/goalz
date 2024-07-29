@@ -85,6 +85,12 @@ describe("SavingsGoal", function () {
       await expect(savingsGoal.setGoal("Vacation", "For a dream vacation", targetAmount, Math.floor(Date.now() / 1000) - 1, usdcAddress)).to.be.revertedWith("Target date should be in the future");
     });
 
+    it("should not create a new savings goal if the target date is now", async function () {
+        const blockNum = await ethers.provider.getBlockNumber();
+        const stamp = (await ethers.provider.getBlock(blockNum)).timestamp;
+        await expect(savingsGoal.setGoal("Vacation", "For a dream vacation", targetAmount, stamp, usdcAddress)).to.be.revertedWith("Target date should be in the future");
+    });
+
     it("should create a new savings goals", async function () {
       expect(
         await savingsGoal.setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress)
@@ -141,6 +147,16 @@ describe("SavingsGoal", function () {
         await expect(
           savingsGoal.connect(user1).deposit(0, 1)
         ).to.be.revertedWith("Deposit exceeds the goal target amount");
+      });
+
+      it("should deposit to complete goal, verify complete flag is set", async function () {
+        let goal = await savingsGoal.savingsGoals(0);
+        expect(goal.currentAmount).to.equal(0);
+        expect(goal.complete).to.equal(false);
+        await savingsGoal.connect(user1).deposit(0, targetAmount);
+        goal = await savingsGoal.savingsGoals(0);
+        expect(goal.currentAmount).to.equal(targetAmount);
+        expect(goal.complete).to.equal(true);
       });
 
       it("should deposit funds into a savings goal usdc token", async function () {
@@ -232,7 +248,12 @@ describe("SavingsGoal", function () {
         ).to.be.revertedWith("Goal has funds, withdraw them first");
       });
 
-      it("should delete the goal and withdraw", async function () {
+      it("should delete a goal with no balance", async function () {
+
+        // Make a deposit to user1's savings goal
+        await savingsGoal.connect(user1).deposit(0, depositAmount);
+        // now withdraw the deposit, to prove that a used goal can be deleted
+        await savingsGoal.connect(user1).withdraw(0);
 
         expect(
           await savingsGoal.connect(user1).deleteGoal(0)
@@ -245,6 +266,11 @@ describe("SavingsGoal", function () {
         expect(goal.targetAmount).to.equal(0);
         expect(goal.targetDate).to.equal(0);
         expect(goal.currentAmount).to.equal(0);
+        // verify that the deleted goal cannot accept deposits
+        expect(
+          savingsGoal.connect(user1).deposit(0, depositAmount)
+        ).to.be.revertedWith("Goal does not exist");
+
       });
     });
 
