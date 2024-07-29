@@ -9,7 +9,6 @@ import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./GoalzToken.sol";
 import "./IGoalzToken.sol";
 import "./gelato/AutomateTaskCreator.sol";
-import "hardhat/console.sol";
 
 contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
     using Counters for Counters.Counter;
@@ -141,13 +140,14 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         SavingsGoal storage goal = savingsGoals[goalId];
         require(goal.currentAmount > 0, "No funds to withdraw");
 
+        uint power = 10 ** ERC20(goal.depositToken).decimals();
         uint amount = goal.currentAmount;
         address depositToken = goal.depositToken;
         GoalzToken goalzToken = goalzTokens[depositToken];
         goal.currentAmount = 0;
         goalzToken.burn(msg.sender, amount); // Triggers an interestIndex update
         goal.endInterestIndex = goalzToken.getInterestIndex();
-        uint _amountWithInterest = amount * 1 + (goal.endInterestIndex - goal.startInterestIndex);
+        uint _amountWithInterest = amount * (power + (goal.endInterestIndex - goal.startInterestIndex)) / power;
         lendingPool.withdraw(depositToken, _amountWithInterest, msg.sender);
 
         emit WithdrawMade(msg.sender, goalId, _amountWithInterest);

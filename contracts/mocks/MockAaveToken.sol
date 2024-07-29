@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract AaveTokenMock is ERC20 {
+contract MockAaveToken is ERC20 {
     uint256 public interestRatePerSecond;
     uint256 public lastUpdateTimestamp;
     mapping(address => uint256) public principalBalances;

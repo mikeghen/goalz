@@ -2,45 +2,43 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./AaveTokenMock.sol";
+import "./MockAaveToken.sol";
+import "hardhat/console.sol";
 
-contract LendingPoolMock {
-    using SafeERC20 for IERC20;
+contract MockLendingPool {
+    uint256 public lastDepositAmount;
+    address public lastDepositToken;
+    uint256 public lastWithdrawAmount;
+    address public lastWithdrawToken;
+    mapping(address => address) public aTokens; // Maps deposit tokens to their corresponding aTokens
 
-    mapping(address => address) public aTokens;
-    mapping(address => uint256) public balances;
-
-    event Deposit(address indexed token, address indexed user, uint256 amount);
-    event Withdraw(address indexed token, address indexed user, uint256 amount);
-
-    function setAToken(address token, address aToken) external {
-        aTokens[token] = aToken;
+    function setAToken(address depositToken, address aToken) external {
+        aTokens[depositToken] = aToken;
     }
 
-    function deposit(address token, uint256 amount, address onBehalfOf, uint16 /*referralCode*/) external {
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        balances[onBehalfOf] += amount;
-        AaveTokenMock(aTokens[token]).mint(onBehalfOf, amount);
-        emit Deposit(token, onBehalfOf, amount);
+    function deposit(address asset, uint256 amount, address onBehalfOf, uint16 /* referralCode */) external {
+        require(aTokens[asset] != address(0), "No aToken set for this asset");
+        lastDepositAmount = amount;
+        lastDepositToken = asset;
+        IERC20(asset).transferFrom(msg.sender, address(this), amount);
+        MockAaveToken(aTokens[asset]).mint(onBehalfOf, amount);
     }
 
-    function withdraw(address token, uint256 amount, address to) external returns (uint256) {
-        require(balances[msg.sender] >= amount, "Insufficient balance");
-        balances[msg.sender] -= amount;
-
-        AaveTokenMock aToken = AaveTokenMock(aTokens[token]);
+    function withdraw(address asset, uint256 amount, address to) external returns (uint256) {
+        require(aTokens[asset] != address(0), "No aToken set for this asset");
+        MockAaveToken aToken = MockAaveToken(aTokens[asset]);
+        require(aToken.balanceOf(msg.sender) >= amount, "Insufficient balance");
+        
+        lastWithdrawAmount = amount;
+        lastWithdrawToken = asset;
+        console.log("message.sender: ", msg.sender);
         aToken.burn(msg.sender, amount);
-        uint256 balanceWithInterest = aToken.balanceOf(msg.sender);
-        aToken.burn(msg.sender, balanceWithInterest - amount);
-
-        IERC20(token).safeTransfer(to, balanceWithInterest);
-        emit Withdraw(token, msg.sender, balanceWithInterest);
-
-        return balanceWithInterest;
+        IERC20(asset).transfer(to, amount);
+        return amount;
     }
 
-    function balanceOf(address user) external view returns (uint256) {
-        return balances[user];
+    function getReserveNormalizedIncome(address asset) external view returns (uint256) {
+        require(aTokens[asset] != address(0), "No aToken set for this asset");
+        return MockAaveToken(aTokens[asset]).balanceOf(address(this));
     }
 }

@@ -5,7 +5,7 @@ describe("GoalzToken with Aave Integration", function () {
   let GoalzToken;
   let goalzToken;
   let goalzTokenAddress;
-  let AaveTokenMock;
+  let MockAaveToken;
   let aaveTokenMock;
   let aaveTokenMockAddress;
   let ERC20Mock;
@@ -22,8 +22,8 @@ describe("GoalzToken with Aave Integration", function () {
     usdcAddress = await usdc.getAddress();
 
     const interestRatePerSecond = ethers.parseEther("3805175038").toString(); // Approx 12% APY
-    AaveTokenMock = await ethers.getContractFactory("AaveTokenMock");
-    aaveTokenMock = await AaveTokenMock.deploy("Aave USD Coin", "aUSDC", interestRatePerSecond);
+    MockAaveToken = await ethers.getContractFactory("MockAaveToken");
+    aaveTokenMock = await MockAaveToken.deploy("Aave USD Coin", "aUSDC", interestRatePerSecond);
     aaveTokenMockAddress = await aaveTokenMock.getAddress();
     
     GoalzToken = await ethers.getContractFactory("GoalzToken");
