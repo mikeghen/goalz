@@ -20,6 +20,9 @@ contract GoalzToken is ERC20, Ownable {
     uint256 public interestIndex;
     uint256 public balanceCheckpoint;
 
+    event InterestIndexUpdated(uint256 newInterestIndex);
+    event BalanceCheckpointUpdated(uint256 newBalanceCheckpoint);
+
     constructor(string memory name, string memory symbol, address _depositToken, address _aToken) ERC20(name, symbol) { 
         require(_depositToken != address(0), "GoalzToken: depositToken is the zero address");
         depositToken = _depositToken;
@@ -30,6 +33,7 @@ contract GoalzToken is ERC20, Ownable {
     function mint(address account, uint256 amount) external onlyOwner {
         if (totalSupply() == 0) {
             balanceCheckpoint = amount;
+            emit BalanceCheckpointUpdated(balanceCheckpoint);
         }
         _updateInterestIndex();
         _mint(account, amount);
@@ -66,6 +70,8 @@ contract GoalzToken is ERC20, Ownable {
         if (balanceCheckpoint > _prevBalanceCheckpoint) {
             interestIndex = interestIndex + (balanceCheckpoint - _prevBalanceCheckpoint) * 10 ** ERC20(aToken).decimals() / _prevBalanceCheckpoint;
         }
+
+        emit 
     }
 
     // Disable transfers

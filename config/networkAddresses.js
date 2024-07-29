@@ -1,0 +1,26 @@
+module.exports = {
+    baseSepolia: {
+        USDC: "0xB731ac0a6783D18A41156c930361D3aB62e77606",
+        WETH: "0xAa17431356ea6b50347dD740Bf6185A6129b7ed7",
+        aUSDC: "0x",
+        aWETH: "0x",
+        AAVE_LENDING_POOL: "0x",
+        GELATO_AUTOMATE: "0x2A6C106ae13B558BB9E2Ec64Bd2f1f7BEFF3A5E0"
+    },
+    base: {
+        USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        WETH: "0x4200000000000000000000000000000000000006",
+        aUSDC: "0x",
+        aWETH: "0x",
+        AAVE_LENDING_POOL: "0x",
+        GELATO_AUTOMATE: "0x2A6C106ae13B558BB9E2Ec64Bd2f1f7BEFF3A5E0"
+    },
+    arbitrum: {
+        USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+        WETH: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+        aUSDC: "...",
+        aWETH: "...",
+        AAVE_LENDING_POOL: "...",
+        GELATO_AUTOMATE: "0x2A6C106ae13B558BB9E2Ec64Bd2f1f7BEFF3A5E0"
+    }
+};
