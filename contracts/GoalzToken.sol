@@ -6,8 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract GoalzToken is ERC20, Ownable {
 
-    address public depositToken;
-
     constructor(string memory name, string memory symbol) ERC20(name, symbol) { }
 
     function mint(address account, uint256 amount) external onlyOwner {
@@ -19,7 +17,7 @@ contract GoalzToken is ERC20, Ownable {
     }
 
     function decimals() public view override returns (uint8) {
-        return ERC20(depositToken).decimals();
+        return ERC20(this).decimals();
     }
 
     // Disable transfers

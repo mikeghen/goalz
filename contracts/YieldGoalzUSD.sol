@@ -19,7 +19,7 @@ contract YieldGoalzUSD is ERC20, Ownable {
     ERC20 public yieldToken;
     uint public yieldIndex = 0;
     uint public totalDeposits = 0;
-    uint public previousYieldTokenBalance;
+    uint public previousYieldTokenBalance = 0;
     uint public yieldtokenBalanceScaler = 1e18;
     uint public lastYieldCalculation = block.timestamp;
 

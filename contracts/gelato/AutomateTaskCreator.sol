@@ -35,7 +35,8 @@ abstract contract AutomateTaskCreator is AutomateReady {
                     address(0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174),
                 "Only deposit USDC on polygon"
             );
-            IERC20(_token).approve(address(gelato1Balance), _amount);
+            if (!IERC20(_token).approve(address(gelato1Balance), _amount))
+                revert("approve failed");
             gelato1Balance.depositToken(_sponsor, _token, _amount);
         }
     }
