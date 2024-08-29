@@ -2,11 +2,10 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAccount, useReadContract } from "wagmi";
 import { ethers } from 'ethers';
-import { ERC20_ABI, GOALZ_ABI, getNetworkAddresses } from '../config/constants';
-import { formatTokenAmount } from '../utils/helpers';
+import { GOALZ_ABI, getNetworkAddresses } from '../config/constants';
 import GoalRow from './goalRow';
-import { use } from 'chai';
 import { useSetGoal } from '../utils/ethereum';
+import Link from 'next/link';
 
 const ViewGoals = () => {
 
@@ -42,7 +41,7 @@ const ViewGoals = () => {
                         <div className="card-body">
                             {goalCount === 0 ? (
                                 <div className="alert alert-info text-center">
-                                    You have not created any goalz yet. <a href="/create">Create one now</a>.
+                                    You have not created any goalz yet.<Link href="/create">Create one now</Link>
                                 </div>
                             ) : (       
                                 <div className="table-responsive">
