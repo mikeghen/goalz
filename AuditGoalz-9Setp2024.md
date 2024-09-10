@@ -1,153 +1,120 @@
 # Audit Report for Goalz Smart Contracts
 
 **Auditor:** Craig Smith  
-**Date:** 9th September 2024
-**time constraint:** 2 hours
+**Date:** 9th September 2024  
+**Time constraint:** 2 hours exploratory audit (not a full audit)
 
-## Summary
+## Scope
 
-The audit revealed several issues in the smart contracts, including reentrancy risk, precision loss, missing zero address checks, and incomplete functionality.
+1) address Goalz.sol and GoalzToken.sol within this audit. 
+2) The mocks are out of scope for this audit.
+3) Gelato is out of scope for this audit.
+4) YieldGoalzUSD.sol is out of scope for this audit. 
 
-## Detailed Findings
+## Test Coverage
 
-1. **Reentrancy risk:**
-   - The `mint` and `burn` functions are not following the checks-effects-interactions pattern, which could potentially lead to reentrancy attacks.
+Coverage is moderate (more branch coverage is needed), and tests are not comprehensive. 
 
-2. **Precision loss:**
-   - The yield calculation might suffer from precision loss due to integer division.
-
-3. **Missing zero address checks:**
-   - The constructor doesn't check if `_yieldToken` is a valid address.
-
-4. **Inconsistent visibility:**
-   - `_increaseYield` is marked as `public` but seems to be an internal function.
-
-5. **Potential overflow:**
-   - The `yieldIndex` calculation might overflow for large balances or long periods without updates.
-
-6. **Missing events:**
-   - Important state changes (mint, burn, yield updates) should emit events for off-chain tracking.
-
-7. **Incomplete functionality:**
-   - The `claimYield` function is missing (marked as TODO).
-
-8. **Inconsistent state updates:**
-   - `totalDeposits` is not updated in `mint` and `burn` functions.
-
-9. **Potential division by zero:**
-   - If `totalDeposits` is zero, `_increaseYield` will revert.
-
-10. **Unused variable:**
-    - `lastYieldCalculation` is set but never used.
-
-11. **Missing access control:**
-    - `_increaseYield` is public and can be called by anyone.
-
-## Suggested Improvements
-
-Here's a suggested improvement for the `mint` function to address some of these issues:
-
-function mint(address account, uint256 amount) external onlyOwner {
-    require(account != address(0), "Invalid address");
-    
-    // Update yield before minting
-    _updateYield();
-    
-    // Update state
-    balances[account] += amount;
-    totalSupply += amount;
-    totalDeposits += amount;
-    
-    // Transfer tokens
-    require(yieldToken.transferFrom(msg.sender, address(this), amount), "Transfer failed");
-    
-    emit Minted(account, amount);
-}
-
-function burn(address account, uint256 amount) external onlyOwner {
-    require(account != address(0), "Invalid address");
-    require(balances[account] >= amount, "Insufficient balance");
-    
-    // Update yield before burning
-    _updateYield();
-    
-    // Update state
-    balances[account] -= amount;
-    totalSupply -= amount;
-    totalDeposits -= amount;
-    
-    // Transfer tokens
-    require(yieldToken.transfer(account, amount), "Transfer failed");
-    
-    emit Burned(account, amount);
-}
-
-// Add this event at the top of the contract
-event Minted(address indexed account, uint256 amount);
-event Burned(address indexed account, uint256 amount);
-
-These improvements address several issues:
-
-1. Reentrancy risk: The functions now follow the checks-effects-interactions pattern.
-2. Precision loss: The yield calculation is updated before any state changes.
-3. Missing zero address checks: The constructor now checks if `_yieldToken` is a valid address.
-4. Inconsistent visibility: `_increaseYield` is marked as `internal` as it was intended.
-5. Potential overflow: The `yieldIndex` calculation is updated before any state changes.
-6. Missing events: Events are emitted for important state changes.
-7. Incomplete functionality: The `claimYield` function is marked as TODO.
-8. Inconsistent state updates: `totalDeposits` is updated in both `mint` and `burn` functions.
-9. Potential division by zero: The `_increaseYield` function now checks if `totalDeposits` is zero.
+| File                      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Lines |
+|---------------------------|---------|----------|---------|---------|-----------------|
+| contracts/                | 75.73   | 50       | 65.63   | 72.86   |                 |
+| Goalz.sol                 | 86.11   | 50       | 73.68   | 86.02   | ... 240,241,251 |
+| GoalzToken.sol            | 88.89   | 75       | 77.78   | 91.67   | 48,62           |
+| IGoalzToken.sol           | 100     | 100      | 100     | 100     |                 |
+| YieldGoalzUSD.sol         | 0       | 0        | 0       | 0       | ... 73,74,75,76 |
+| contracts/gelato/         | 25      | 0        | 29.41   | 30.3    |                 |
+| AutomateReady.sol         | 37.5    | 0        | 25      | 46.15   | ... 58,59,61,70 |
+| AutomateTaskCreator.sol   | 20      | 0        | 33.33   | 20      | ... 115,119,121 |
+| Ops.sol                   | 100     | 100      | 0       | 100     |                 |
+| Types.sol                 | 100     | 100      | 100     | 100     |                 |
+| contracts/mocks/          | 84      | 37.5     | 80      | 88.57   |                 |
+| ERC20Mock.sol             | 100     | 100      | 100     | 100     |                 |
+| MockAaveToken.sol         | 100     | 100      | 100     | 100     |                 |
+| MockGelato.sol            | 75      | 100      | 66.67   | 75      | 23,47           |
+| MockLendingPool.sol       | 83.33   | 37.5     | 75      | 88.24   | 41,42           |
+| All files                 | 67.95   | 42.55    | 60.87   | 68.75   |                 |
 
 
+## Audit Report for Goalz.sol
 
-# Audit Report for Goalz.sol
-
-1. **Reentrancy Risk:**
+1. Reentrancy Risk:
    - The `withdraw` function follows the checks-effects-interactions pattern, which is good. However, consider using OpenZeppelin's `ReentrancyGuard` for additional protection.
 
-2. **Access Control:**
+2. Access Control:
    - The `automatedDeposit` function can be called by anyone. Consider adding access control to ensure only authorized entities (e.g., Gelato) can call this function.
 
-3. **Input Validation:**
+3. Input Validation:
    - In `setGoal`, consider adding a check for a maximum `targetAmount` to prevent unreasonably large goals.
 
-4. **Gas Optimization:**
+4. Gas Optimization:
    - The `_addDepositToken` function creates a new `GoalzToken` for each deposit token. This could be gas-intensive if many deposit tokens are added.
 
-5. **Event Emission:**
+5. Event Emission:
    - Consider emitting an event when a goal is completed (when `currentAmount == targetAmount`).
 
-6. **Potential DOS:**
+6. Potential DOS:
    - The `automateDeposit` function creates a Gelato task for each automated deposit. If many users create automated deposits, it could potentially lead to high gas costs or even a DOS situation.
 
-7. **Precision Loss:**
-   - The `CHECK_DURATION` is defined in milliseconds but Solidity works with seconds. This could lead to precision loss or unexpected behavior.
+7. Timestamp precision:
+   - The `CHECK_DURATION` is defined in milliseconds for Gelato, but Solidity works with seconds. The current implementation is not affected by this, but it could be a problem in the future.
 
-8. **Unused Variable:**
+8. Unused Variable:
    - The `data` parameter in `_beforeTokenTransfer` is unused.
 
-9. **Missing Functionality:**
+9. Missing Functionality:
    - The `depositFundsTo1Balance` function is not implemented.
 
-10. **Incomplete Implementation:**
+10. Incomplete Implementation:
     - The TODO comment in `_beforeTokenTransfer` suggests that token transferability is not finalized.
 
-11. **Potential Centralization Risk:**
+11. Potential Centralization Risk:**
     - The contract owner has significant control over the system, including the ability to add deposit tokens.
 
-## Recommendations:
+## Recommendation for AutomateReady.sol - line 46
+
+Add an acceptance return of the value isDeployed in the constructor of AutomateReady.sol
+
+
+## GoalzToken.sol
+
+1. Centralization risk:
+   - The `mint` and `burn` functions are onlyOwner() which is a centralization risk, low severity
+
+2. Reentrancy risk:
+   - The `mint` and `burn` functions are not doing the checks-effects-interactions pattern, which could potentially lead to reentrancy attacks, but this is not a problem in the current implementation, because of the checks in the calling functions.  
+
+3. Missing zero address checks: see 2.
+
+Mint and burn functions - all the places where mint/burn are called, the amount has been checked for zero, and the account has been checked for the zero address, but what about future functions that might call mint/burn?
+
+## Recommendations for GoalzToken.sol
+
+1. While it is currently consistent, checks for token address and amount (deposit/mint and withdraw/burn) done at different levels of the call stack, revisiting the design to verify that all checks are done once and only once, and made explicit so future developers will know the design paradigm for checks would add to maintainability.
+
+2. Additional checks could be added to mint and burn functions to check for bad addresses and amounts, but have already been checked by calling functions.
+
+   - GoalzToken.sol - line 34, Add a require to check if the depositToken is the zero address.
+   - GoalzToken.sol - line 35, Add a require to check if the aToken is the zero address.
+   - GoalzToken.sol - line 48, Add a require to check if the amount is greater than 0.
+   - GoalzToken.sol - line 50, Add a require to check if the account is not the zero address.
+   - GoalzToken.sol - line 52, Add a require to check if the amount is greater than 0.
+   - GoalzToken.sol - line 54, Add a require to check if the balance of the account is greater than or equal to the amount.
+
+3. Possibly implement the `ReentrancyGuard` from OpenZeppelin for critical functions like `mint` and `burn`.
+
+## Overall Recommendations:
 
 1. Implement the `ReentrancyGuard` from OpenZeppelin for critical functions like `withdraw`.
 
-2. Add access control to the `automatedDeposit` function:
+2. automatedDeposit is a public function - Add access control for Gelato, to the `automatedDeposit` function:
 
-
+```solidity
 function automatedDeposit(uint goalId) external goalExists(goalId) onlyAutomation {
-    goalExists(goalId) onlyAutomation;
-
     // ... existing code ...
 }
+
 modifier onlyAutomation() {
     require(msg.sender == automationAddress, "Only automation contract can call this function");
     _;
 }
+```
