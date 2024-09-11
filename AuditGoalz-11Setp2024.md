@@ -1,7 +1,7 @@
 # Audit Report for Goalz Smart Contracts
 
 **Auditor:** Craig Smith  
-**Date:** 9th September 2024  
+**Date:** 11th September 2024  
 **Time constraint:** 2 hours exploratory audit (not a full audit)
 
 ## Scope
@@ -9,7 +9,7 @@
 1) address Goalz.sol and GoalzToken.sol within this audit. 
 2) The mocks are out of scope for this audit.
 3) Gelato is out of scope for this audit.
-4) YieldGoalzUSD.sol is out of scope for this audit. 
+4) YieldGoalzUSD.sol is out of scope for this audit. (no tests exist)
 
 ## Test Coverage
 
@@ -56,19 +56,17 @@ Coverage is moderate (more branch coverage is needed), and tests are not compreh
    - The `automateDeposit` function creates a Gelato task for each automated deposit. If many users create automated deposits, it could potentially lead to high gas costs or even a DOS situation.
 
 7. Timestamp precision:
-   - The `CHECK_DURATION` is defined in milliseconds for Gelato, but Solidity works with seconds. The current implementation is not affected by this, but it could be a problem in the future.
+   - The `CHECK_DURATION` is defined in milliseconds for Gelato, but Solidity works with seconds. The current implementation is not affected by this, but may be something to consider for maintenance.
 
 8. Unused Variable:
    - The `data` parameter in `_beforeTokenTransfer` is unused.
 
-9. Missing Functionality:
-   - The `depositFundsTo1Balance` function is not implemented.
-
-10. Incomplete Implementation:
+9. Incomplete Implementation:
     - The TODO comment in `_beforeTokenTransfer` suggests that token transferability is not finalized.
 
-11. Potential Centralization Risk:**
+10. Potential Centralization Risk:**
     - The contract owner has significant control over the system, including the ability to add deposit tokens.
+
 
 ## Recommendation for AutomateReady.sol - line 46
 
@@ -87,7 +85,7 @@ Add an acceptance return of the value isDeployed in the constructor of AutomateR
 
 Mint and burn functions - all the places where mint/burn are called, the amount has been checked for zero, and the account has been checked for the zero address, but what about future functions that might call mint/burn?
 
-## Recommendations for GoalzToken.sol
+## Recommendations for Goalz
 
 1. While it is currently consistent, checks for token address and amount (deposit/mint and withdraw/burn) done at different levels of the call stack, revisiting the design to verify that all checks are done once and only once, and made explicit so future developers will know the design paradigm for checks would add to maintainability.
 
@@ -100,13 +98,9 @@ Mint and burn functions - all the places where mint/burn are called, the amount 
    - GoalzToken.sol - line 52, Add a require to check if the amount is greater than 0.
    - GoalzToken.sol - line 54, Add a require to check if the balance of the account is greater than or equal to the amount.
 
-3. Possibly implement the `ReentrancyGuard` from OpenZeppelin for critical functions like `mint` and `burn`.
+3. Implement `ReentrancyGuard` from OpenZeppelin for critical functions like `mint` and `burn` and 'withdraw'.
 
-## Overall Recommendations:
-
-1. Implement the `ReentrancyGuard` from OpenZeppelin for critical functions like `withdraw`.
-
-2. automatedDeposit is a public function - Add access control for Gelato, to the `automatedDeposit` function:
+4. automatedDeposit is a public function - Add access control for Gelato, to the `automatedDeposit` function:
 
 ```solidity
 function automatedDeposit(uint goalId) external goalExists(goalId) onlyAutomation {
