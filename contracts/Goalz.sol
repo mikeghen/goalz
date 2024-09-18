@@ -199,8 +199,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         }
     }
 
-
-    function automatedDeposit(uint goalId) external goalExists(goalId) {
+    function automatedDeposit(uint goalId) external goalExists(goalId) onlyDedicatedMsgSender {
         AutomatedDeposit storage _automatedDeposit = automatedDeposits[goalId];
         uint amount = _automatedDeposit.amount;
         require(amount > 0, "No automated deposit for this goal");
