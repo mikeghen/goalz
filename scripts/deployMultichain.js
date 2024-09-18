@@ -1,47 +1,85 @@
 const hre = require("hardhat");
-
-// Network configurations
-const networkConfigs = {
-  arbitrum: {
-    USDC_ADDRESS: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-    WETH_ADDRESS: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-    GELATO_AUTOMATE: "0x2A6C106ae13B558BB9E2Ec64Bd2f1f7BEFF3A5E0",
-  },
-  base: {
-    USDC_ADDRESS: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-    WETH_ADDRESS: "0x4200000000000000000000000000000000000006",
-    GELATO_AUTOMATE: "0x2A6C106ae13B558BB9E2Ec64Bd2f1f7BEFF3A5E0",
-  },
-  baseSepolia: {
-    USDC_ADDRESS: "0xB731ac0a6783D18A41156c930361D3aB62e77606",
-    WETH_ADDRESS: "0xAa17431356ea6b50347dD740Bf6185A6129b7ed7",
-    GELATO_AUTOMATE: "0x2A6C106ae13B558BB9E2Ec64Bd2f1f7BEFF3A5E0",
-  },
-};
+const { ethers } = hre;
+const NETWORK_ADDRESSES = require("../config/networkAddresses");
 
 async function main() {
+  console.log("Starting deployment...");
 
-  // Get the network name
-  const networkName = hre.network.name;
+  const [deployer] = await ethers.getSigners();
+  console.log("Deploying contracts with the account:", await deployer.getAddress());
 
-  if (!networkName || !networkConfigs[networkName]) {
-    throw new Error(`Invalid or missing network name. Available networks: ${Object.keys(networkConfigs).join(", ")}`);
+  // Get the current network
+  const network = hre.network.name;
+  console.log("Deploying to network:", network);
+
+  // Ensure we have addresses for the current network
+  if (!NETWORK_ADDRESSES[network]) {
+    throw new Error(`No configuration found for network: ${network}`);
   }
 
-  // Get the network configuration
-  const { USDC_ADDRESS, WETH_ADDRESS, GELATO_AUTOMATE } = networkConfigs[networkName];
+  const {
+    USDC,
+    WETH,
+    aUSDC,
+    aWETH,
+    AAVE_LENDING_POOL,
+    GELATO_AUTOMATE
+  } = NETWORK_ADDRESSES[network];
 
-  // Get the deployer signer
-  const [deployer] = await hre.ethers.getSigners();
+  // Check if all required addresses are available
+  if (!USDC || !WETH || !aUSDC || !aWETH || !AAVE_LENDING_POOL) {
+    throw new Error(`Missing required address for network: ${network}. Please update the networkAddresses.js configuration.`);
+  }
 
-  // Deploy GoalzToken
-  const Goalz = await hre.ethers.getContractFactory("Goalz");
-  const goalz = await Goalz.deploy([USDC_ADDRESS, WETH_ADDRESS], GELATO_AUTOMATE);
-  const goalzAddress = await goalz.getAddress();
-  console.log(`Goalz deployed to ${networkName} network at:`, goalzAddress);
+  // Deploy Goalz contract
+  const Goalz = await ethers.getContractFactory("Goalz");
+  const goalz = await Goalz.deploy(
+    [USDC, WETH],
+    [aUSDC, aWETH],
+    GELATO_AUTOMATE,
+    AAVE_LENDING_POOL
+  );
+
+  await goalz.deployed();
+  console.log("Goalz deployed to:", goalz.address);
+
+  // Get GoalzToken addresses
+  const glzUSDCAddress = await goalz.goalzTokens(USDC);
+  const glzWETHAddress = await goalz.goalzTokens(WETH);
+
+  console.log("Goalz USDC token deployed to:", glzUSDCAddress);
+  console.log("Goalz WETH token deployed to:", glzWETHAddress);
+
+  // Verify contracts on Etherscan
+  if (network !== "hardhat" && network !== "localhost") {
+    console.log("Verifying contracts on Etherscan...");
+    await verifyContracts(goalz.address, USDC, WETH, aUSDC, aWETH, AAVE_LENDING_POOL);
+  }
+
+  console.log("Deployment completed successfully!");
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+async function verifyContracts(goalzAddress, USDC, WETH, aUSDC, aWETH, AAVE_LENDING_POOL) {
+  try {
+    await hre.run("verify:verify", {
+      address: goalzAddress,
+      constructorArguments: [
+        [USDC, WETH],
+        [aUSDC, aWETH],
+        GELATO_AUTOMATE,
+        AAVE_LENDING_POOL
+      ],
+    });
+
+    console.log("Contract verification completed successfully");
+  } catch (error) {
+    console.error("Error during contract verification:", error);
+  }
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
