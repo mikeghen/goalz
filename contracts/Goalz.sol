@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./GoalzToken.sol";
 import "./IGoalzToken.sol";
 import "./gelato/AutomateTaskCreator.sol";
-import "hardhat/console.sol";
 
 contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
     using Counters for Counters.Counter;
@@ -23,6 +23,8 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         uint targetDate;
         address depositToken;
         bool complete;
+        uint256 startInterestIndex;
+        uint256 endInterestIndex;
     }
 
     struct AutomatedDeposit {
@@ -33,11 +35,12 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
     }
 
     uint256 constant CHECK_DURATION = 10 minutes * 1000; // 10 min as milliseconds
+    IPool public lendingPool;
     mapping(address => GoalzToken) public goalzTokens;
     mapping(uint => SavingsGoal) public savingsGoals;
     mapping(uint => AutomatedDeposit) public automatedDeposits;
 
-    event GoalCreated(address indexed saver, uint indexed goalId, string what, string why, uint targetAmount, uint targetDate, address depositToken);
+    event GoalCreated(address indexed saver, uint indexed goalId, string what, string why, uint targetAmount, uint targetDate, address depositToken, uint256 interestIndex);
     event GoalDeleted(address indexed saver, uint indexed goalId);
     event GoalzTokenCreated(address indexed depositToken, address indexed goalzToken);
     event DepositMade(address indexed saver, uint indexed goalId, uint amount);
@@ -45,23 +48,27 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
     event AutomatedDepositCreated(address indexed saver, uint indexed goalId, uint amount, uint frequency);
     event AutomatedDepositCanceled(address indexed saver, uint indexed goalId);
 
-    constructor(address[] memory _initialDepositTokens, address _automate) 
+    constructor(address[] memory _initialDepositTokens, address[] memory _initialATokens, address _automate, address _lendingPool) 
         ERC721("Goalz", "GOALZ") 
         AutomateTaskCreator(_automate) 
     {
+        require(_initialDepositTokens.length == _initialATokens.length, "Deposit tokens and aTokens should be the same length");
         for (uint i = 0; i < _initialDepositTokens.length; i++) {
-            _addDepositToken(_initialDepositTokens[i]);
+            _addDepositToken(_initialDepositTokens[i], _initialATokens[i]);
         }
+        lendingPool = IPool(_lendingPool);
     }
 
-    function _addDepositToken(address depositToken) internal {
-        ERC20 token = ERC20(depositToken);
-        GoalzToken goalzToken = new GoalzToken(
-            string.concat("Goalz ", token.name()), 
-            string.concat("glz", token.symbol())
+    function _addDepositToken(address _depositToken, address _aToken) internal {
+        ERC20 _token = ERC20(_depositToken);
+        GoalzToken _goalzToken = new GoalzToken(
+            string.concat("Goalz ", _token.name()), 
+            string.concat("glz", _token.symbol()),
+            _depositToken,
+            _aToken
         );
-        goalzTokens[depositToken] = goalzToken;
-        emit GoalzTokenCreated(address(depositToken), address(goalzToken));
+        goalzTokens[_depositToken] = _goalzToken;
+        emit GoalzTokenCreated(_depositToken, address(_goalzToken));
     }
 
     modifier goalExists(uint goalId) {
@@ -91,11 +98,12 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         require(address(goalzTokens[depositToken]) != address(0), "Deposit token should be USDC or WETH");
 
         uint goalId = _tokenIdCounter.current();
-        savingsGoals[goalId] = SavingsGoal(what, why, targetAmount, 0, targetDate, depositToken, false);
+        uint256 startInterestIndex = goalzTokens[depositToken].getInterestIndex();
+        savingsGoals[goalId] = SavingsGoal(what, why, targetAmount, 0, targetDate, depositToken, false, startInterestIndex, 0);
         _mint(msg.sender, goalId);
         _tokenIdCounter.increment();
 
-        emit GoalCreated(msg.sender, goalId, what, why, targetAmount, targetDate, depositToken);
+        emit GoalCreated(msg.sender, goalId, what, why, targetAmount, targetDate, depositToken, startInterestIndex);
     }
 
     function deleteGoal(uint goalId) external goalExists(goalId) isGoalOwner(goalId) {
@@ -109,11 +117,20 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
 
     function deposit(uint goalId, uint amount) external goalExists(goalId) {
         require(amount > 0, "Deposit amount should be greater than 0");
+
         SavingsGoal storage goal = savingsGoals[goalId];
+        
+        // If there was previously a withdraw, reset the end interest index
+        if(goal.endInterestIndex != 0) {
+            goal.endInterestIndex = 0;
+        }
+
         require(goal.currentAmount + amount <= goal.targetAmount, "Deposit exceeds the goal target amount");
+
         if(goal.currentAmount + amount == goal.targetAmount) {
             goal.complete = true;
         }
+
         _deposit(msg.sender, goal, amount);
 
         emit DepositMade(msg.sender, goalId, amount);
@@ -123,12 +140,17 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         SavingsGoal storage goal = savingsGoals[goalId];
         require(goal.currentAmount > 0, "No funds to withdraw");
 
+        uint power = 10 ** ERC20(goal.depositToken).decimals();
         uint amount = goal.currentAmount;
+        address depositToken = goal.depositToken;
+        GoalzToken goalzToken = goalzTokens[depositToken];
         goal.currentAmount = 0;
-        goalzTokens[goal.depositToken].burn(msg.sender, amount);
-        IERC20(goal.depositToken).safeTransfer(msg.sender, amount);
+        goalzToken.burn(msg.sender, amount); // Triggers an interestIndex update
+        goal.endInterestIndex = goalzToken.getInterestIndex();
+        uint _amountWithInterest = amount * (power + (goal.endInterestIndex - goal.startInterestIndex)) / power;
+        lendingPool.withdraw(depositToken, _amountWithInterest, msg.sender);
 
-        emit WithdrawMade(msg.sender, goalId, amount);
+        emit WithdrawMade(msg.sender, goalId, _amountWithInterest);
     }
 
     function automateDeposit(uint goalId, uint amount, uint frequency) external goalExists(goalId) {
@@ -195,9 +217,28 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
     }
 
     function _deposit(address account, SavingsGoal storage goal, uint amount) internal {
-        IERC20(goal.depositToken).safeTransferFrom(account, address(this), amount);
-        goalzTokens[goal.depositToken].mint(account, amount);
+        address _depositToken = goal.depositToken;
+        IERC20(_depositToken).safeTransferFrom(account, address(this), amount);
+        goalzTokens[_depositToken].mint(account, amount);
         goal.currentAmount += amount;
+        _depositToAave(_depositToken, amount);
+    }
+
+    function _depositToAave(address token, uint amount) internal {
+        IERC20(token).approve(address(lendingPool), amount);
+        lendingPool.deposit(token, amount, address(this), 0);
+    }
+
+    function _withdrawFromAave(address token, uint amount) internal {
+        lendingPool.withdraw(token, amount, address(this));
+    }
+
+    function balanceOf(uint _goalId) internal view returns (uint) {
+        SavingsGoal storage _goal = savingsGoals[_goalId];
+        address _depositToken = _goal.depositToken;
+        // Use the next interest index to calculate the current amount
+        uint currentInterestIndex = goalzTokens[_depositToken].getNextInterestIndex();
+        return  _goal.currentAmount * 10 ** ERC20(_depositToken).decimals() + (currentInterestIndex - _goal.startInterestIndex);
     }
 
     /// @notice Disable Transfers of tokens
