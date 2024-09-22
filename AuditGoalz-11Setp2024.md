@@ -112,3 +112,28 @@ modifier onlyAutomation() {
     _;
 }
 ```
+
+# Remediation
+
+## Summary of Recommendations & Remediation Status
+
+| No. | Recommendation | Severity | Status |
+|-----|----------------|----------|--------|
+| 1 | Add access control to `automatedDeposit` function | High | Review |
+| 2 | Implement OpenZeppelin's `ReentrancyGuard` for additional protection against reentrancy | Medium | Review |
+| 3 | Address potential DOS risk in `automateDeposit` function | Medium | Remediation |
+| 4 | Finalize token transferability implementation | Medium | Remediation |
+| 5 | Address centralization risk in contract ownership | Medium | Acknowledged |
+| 6 | Add zero address and amount checks in Goalz/GoalzToken.sol | Medium | Review |
+| 7 | Add maximum `targetAmount` check in `setGoal` function | Low | Acknowledged |
+| 8 | Optimize gas usage in `_addDepositToken` function | Low | Acknowledged |
+| 9 | Emit event when a goal is completed | Low | Review |
+| 10 | Review timestamp precision handling | Low | Acknowledged |
+| 11 | Remove or utilize unused `data` parameter in `_beforeTokenTransfer` | Acknowledged |
+| 12 | Add return value acceptance in AutomateReady.sol constructor | Low | Acknowledged |
+| 13 | Revisit design for consistent check placement | Info | Review |
+
+* Acknowledged - Goalz Team has acknowledged this issue and it is not a priority to fix.
+* Review - Goalz Team has fixed this issue and it needs re-review.
+* Remediation - Goalz Team is currently working on this issue.
+* Fixed - Reviewed by the auditor and found to be fixed.
