@@ -24,6 +24,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         address depositToken;
         bool complete;
         uint256 startInterestIndex;
+        uint256 lastInterestIndex;
         uint256 endInterestIndex;
     }
 
@@ -99,7 +100,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
 
         uint goalId = _tokenIdCounter.current();
         uint256 startInterestIndex = goalzTokens[depositToken].getInterestIndex();
-        savingsGoals[goalId] = SavingsGoal(what, why, targetAmount, 0, targetDate, depositToken, false, startInterestIndex, 0);
+        savingsGoals[goalId] = SavingsGoal(what, why, targetAmount, 0, targetDate, depositToken, false, startInterestIndex, startInterestIndex, 0);
         _mint(msg.sender, goalId);
         _tokenIdCounter.increment();
 
@@ -124,7 +125,9 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         if(goal.endInterestIndex != 0) {
             goal.endInterestIndex = 0;
         }
-
+        if(goal.currentAmount > 0) {
+            goalzTokens[goal.depositToken].updateInterestIndex();
+        }
         require(goal.currentAmount + amount <= goal.targetAmount, "Deposit exceeds the goal target amount");
 
         if(goal.currentAmount + amount == goal.targetAmount) {
@@ -145,10 +148,12 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         address depositToken = goal.depositToken;
         GoalzToken goalzToken = goalzTokens[depositToken];
         goal.currentAmount = 0;
+        goal.lastInterestIndex = goalzToken.getInterestIndex();
         goalzToken.burn(msg.sender, amount); // Triggers an interestIndex update
-        goal.endInterestIndex = goalzToken.getInterestIndex();
-        uint _amountWithInterest = amount * (power + (goal.endInterestIndex - goal.startInterestIndex)) / power;
+        goal.endInterestIndex = goalzToken.getNextInterestIndex();
+        uint _amountWithInterest = amount * (power + (goal.endInterestIndex - goal.lastInterestIndex)) / power;
         lendingPool.withdraw(depositToken, _amountWithInterest, msg.sender);
+        goal.endInterestIndex = 0;
 
         emit WithdrawMade(msg.sender, goalId, _amountWithInterest);
     }
@@ -238,7 +243,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         address _depositToken = _goal.depositToken;
         // Use the next interest index to calculate the current amount
         uint currentInterestIndex = goalzTokens[_depositToken].getNextInterestIndex();
-        return  _goal.currentAmount * 10 ** ERC20(_depositToken).decimals() + (currentInterestIndex - _goal.startInterestIndex);
+        return  _goal.currentAmount * 10 ** ERC20(_depositToken).decimals() + (currentInterestIndex - _goal.lastInterestIndex);
     }
 
     /// @notice Disable Transfers of tokens
