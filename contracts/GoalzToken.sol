@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /// @title GoalzToken
 /// @notice ERC20 token representing a deposit into Goalz. This contract is used for tracking the principal deposits
@@ -14,7 +15,7 @@ import "hardhat/console.sol";
 /// - The balance checkpoint is used to calculate the interest index, the change in aToken balance is used to update the interest index.
 /// @dev Future work should get these tokens to work like rebasing a tokens themselves. It could be a wrapper around the
 /// getNormalizedIncome function in Aave. 
-contract GoalzToken is ERC20, Ownable {
+contract GoalzToken is ERC20, ReentrancyGuard, Ownable {
 
     address public depositToken;
     address public aToken;
@@ -24,14 +25,15 @@ contract GoalzToken is ERC20, Ownable {
     event InterestIndexUpdated(uint256 prevInterestIndex, uint256 newInterestIndex);
     event BalanceCheckpointUpdated(uint256 prevBalanceCheckpoint, uint256 newBalanceCheckpoint);
 
+    /// @dev Checks for zero addresses are performed in the Goalz contract
     constructor(string memory name, string memory symbol, address _depositToken, address _aToken) ERC20(name, symbol) { 
-        require(_depositToken != address(0), "GoalzToken: depositToken is the zero address");
         depositToken = _depositToken;
         aToken = _aToken;
         interestIndex = 10 ** ERC20(depositToken).decimals();
     }
 
-    function mint(address account, uint256 amount) external onlyOwner {
+    /// @dev Checks for zero address, zero amount, and sufficient balance are performed in the Goalz contract
+    function mint(address account, uint256 amount) external onlyOwner nonReentrant {
         if (totalSupply() == 0) {
             balanceCheckpoint = amount;
             emit BalanceCheckpointUpdated(0, balanceCheckpoint);
@@ -40,7 +42,8 @@ contract GoalzToken is ERC20, Ownable {
         _mint(account, amount);
     }
 
-    function burn(address account, uint256 amount) external onlyOwner {
+    /// @dev Checks for zero amount and sufficient balance are performed in the Goalz contract
+    function burn(address account, uint256 amount) external onlyOwner nonReentrant {
         _updateInterestIndex();
         _burn(account, amount);
     }
@@ -69,7 +72,7 @@ contract GoalzToken is ERC20, Ownable {
         balanceCheckpoint = ERC20(aToken).balanceOf(owner());
 
         uint256 _prevIndex = interestIndex;
-        if (balanceCheckpoint > _prevBalanceCheckpoint) {
+        if (_prevBalanceCheckpoint > 0 && balanceCheckpoint > _prevBalanceCheckpoint) {
             interestIndex = interestIndex + (balanceCheckpoint - _prevBalanceCheckpoint) * 10 ** ERC20(aToken).decimals() / _prevBalanceCheckpoint;
         }
 
