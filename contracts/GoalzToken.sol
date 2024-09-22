@@ -68,7 +68,7 @@ contract GoalzToken is ERC20, Ownable {
         balanceCheckpoint = ERC20(aToken).balanceOf(owner());
 
         uint256 _prevIndex = interestIndex;
-        if (balanceCheckpoint > _prevBalanceCheckpoint) {
+        if (_prevBalanceCheckpoint > 0 && balanceCheckpoint > _prevBalanceCheckpoint) {
             interestIndex = interestIndex + (balanceCheckpoint - _prevBalanceCheckpoint) * 10 ** ERC20(aToken).decimals() / _prevBalanceCheckpoint;
         }
 
