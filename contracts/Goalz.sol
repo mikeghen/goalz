@@ -140,10 +140,16 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
         SavingsGoal storage goal = savingsGoals[goalId];
         require(goal.currentAmount > 0, "No funds to withdraw");
 
-        uint power = 10 ** ERC20(goal.depositToken).decimals();
-        uint amount = goal.currentAmount;
         address depositToken = goal.depositToken;
         GoalzToken goalzToken = goalzTokens[depositToken];
+
+        // Update interest index and calculate accrued interest
+        (uint256 accruedInterest, uint256 newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
+        goal.currentAmount += accruedInterest;
+        goal.startInterestIndex = newInterestIndex;
+
+        uint power = 10 ** ERC20(depositToken).decimals();
+        uint amount = goal.currentAmount;
         goal.currentAmount = 0;
         goalzToken.burn(msg.sender, amount); // Triggers an interestIndex update
         goal.endInterestIndex = goalzToken.getInterestIndex();
@@ -218,8 +224,15 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator {
 
     function _deposit(address account, SavingsGoal storage goal, uint amount) internal {
         address _depositToken = goal.depositToken;
+        GoalzToken goalzToken = goalzTokens[_depositToken];
+
+        // Update interest index and calculate accrued interest
+        (uint256 accruedInterest, uint256 newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
+        goal.currentAmount += accruedInterest;
+        goal.startInterestIndex = newInterestIndex;
+
         IERC20(_depositToken).safeTransferFrom(account, address(this), amount);
-        goalzTokens[_depositToken].mint(account, amount);
+        goalzToken.mint(account, amount);
         goal.currentAmount += amount;
         _depositToAave(_depositToken, amount);
     }
