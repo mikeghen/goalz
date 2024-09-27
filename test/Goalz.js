@@ -176,15 +176,17 @@ describe("Goalz", function () {
       
       await aUSDC.mockBalanceOf(depositAmount); 
       await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
-      await goalz.connect(user1).deposit(0, depositAmount);
-
+      // get the before balances, before the deposit
       const userBalanceBefore = await usdc.balanceOf(user1.address);
       const goalzBalanceBefore = await usdc.balanceOf(await goalz.getAddress());
       const goalzUSDBalanceBefore = await goalzUSD.balanceOf(user1.address);
 
-      // Set the mock aToken balance
-      const interestAccrued = depositAmount;
-      await aUSDC.mockBalanceOf(depositAmount + interestAccrued); 
+      await goalz.connect(user1).deposit(0, depositAmount);
+            // Set the mock aToken balance
+      // 5% increase
+      const interestAccrued = depositAmount * BigInt(5) / BigInt(100); // 5% increase
+      await aUSDC.mockBalanceOf(depositAmount + interestAccrued);
+   
       await expect(goalz.connect(user1).withdraw(0))
         .to.emit(goalz, "WithdrawMade")
         .withArgs(user1.address, 0, depositAmount + interestAccrued);
@@ -194,7 +196,7 @@ describe("Goalz", function () {
       const goalzUSDBalanceAfter = await goalzUSD.balanceOf(user1.address);
       // const aUSDCBalance = await aUSDC.balanceOf(await goalz.getAddress());
 
-      expect(userBalanceAfter).to.equal(userBalanceBefore + depositAmount + interestAccrued);
+      expect(userBalanceAfter).to.equal(userBalanceBefore + interestAccrued);
       expect(goalzBalanceAfter).to.equal(goalzBalanceBefore);
       expect(goalzUSDBalanceAfter).to.equal(0);
       // expect(aUSDCBalance).to.equal(0);
@@ -205,22 +207,37 @@ describe("Goalz", function () {
     it("should accrue interest over time", async function () {
       const { goalz, usdc, goalzUSD, aUSDC } = await loadFixture(deployGoalzFixture);
       
+      await usdc.mint(await mockLendingPool.getAddress(), depositAmount * 2n); // Give it enough tokens for this test.
+      await aUSDC.mint(await goalz.getAddress(), depositAmount * 2n); // Give it enough tokens for this test.
+      
       await aUSDC.mockBalanceOf(depositAmount);
       await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
       await goalz.connect(user1).deposit(0, depositAmount);
 
+      const initialUser1Balance = await usdc.balanceOf(user1.address);
+      console.log("initialUser1Balance", initialUser1Balance);
       const initialGoalzUSDBalance = await goalzUSD.balanceOf(user1.address);
 
       // Simulate interest accrual
-      const newBalance = depositAmount * BigInt(105) / BigInt(100); // 5% increase
+      let newBalance = depositAmount * BigInt(105) / BigInt(100); // 5% increase
       await aUSDC.mockBalanceOf(newBalance);
 
       // Fast forward time
       await time.increase(365 * 24 * 60 * 60); // 1 year
 
       // Trigger an update of the interest index
-      await goalz.connect(user1).deposit(0, 1);
+      await goalz.connect(user1).deposit(0, depositAmount);
 
+      newBalance = newBalance * BigInt(105) / BigInt(100) + depositAmount;
+      await aUSDC.mockBalanceOf(newBalance);
+      // Fast forward time
+      await time.increase(365 * 24 * 60 * 60); // 1 year
+
+      // Trigger an update of the interest index
+      await goalz.connect(user1).withdraw(0);
+
+      const finalUser1Balance = await usdc.balanceOf(user1.address);
+      console.log("finalUser1Balance", finalUser1Balance);
       const finalGoalzUSDBalance = await goalzUSD.balanceOf(user1.address);
       expect(finalGoalzUSDBalance).to.be.gt(initialGoalzUSDBalance);
 

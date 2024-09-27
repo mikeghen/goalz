@@ -10,6 +10,7 @@ import "./GoalzToken.sol";
 import "./IGoalzToken.sol";
 import "./gelato/AutomateTaskCreator.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard {
     using Counters for Counters.Counter;
@@ -145,6 +146,9 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         // Update interest index and calculate accrued interest
         (uint256 accruedInterest, uint256 newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
         goal.startInterestIndex = newInterestIndex;
+        // mint interest to goal.saver
+        console.log("accruedInterest xx", accruedInterest);
+        goalzToken.mint(msg.sender, accruedInterest);
         uint withdrawAmount = goal.currentAmount + accruedInterest;
         uint power = 10 ** ERC20(depositToken).decimals();
         goal.currentAmount = 0;
@@ -236,10 +240,13 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         (uint256 accruedInterest, uint256 newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
         goal.currentAmount += accruedInterest;
         goal.startInterestIndex = newInterestIndex;
+//        console.log("amount", amount);
+//        console.log("Accrued interest", accruedInterest);
 
         IERC20(_depositToken).safeTransferFrom(account, address(this), amount);
         goalzToken.mint(account, amount + accruedInterest);
-        goal.currentAmount += amount;
+        // @dev this is not correct, it should be the amount deposited + accrued interest
+        goal.currentAmount += (amount + accruedInterest);
         _depositToAave(_depositToken, amount);
     }
 
