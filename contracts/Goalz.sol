@@ -239,7 +239,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
 
         IERC20(_depositToken).safeTransferFrom(account, address(this), amount);
         goalzToken.mint(account, amount + accruedInterest);
-        goal.currentAmount += amount;
+        goal.currentAmount += (amount + accruedInterest);
         _depositToAave(_depositToken, amount);
     }
 
