@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./GoalzToken.sol";
 import "./IGoalzToken.sol";
-// import "./TokenTracking.sol";`
+// import "./TokenTracking.sol";
 import "./gelato/AutomateTaskCreator.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -38,7 +38,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
 
     uint256 constant CHECK_DURATION = 10 minutes * 1000; // 10 min as milliseconds
     IPool public lendingPool;
-    TokenTracking public tokenTracking;
+    // TokenTracking public tokenTracking;
     mapping(address => GoalzToken) public goalzTokens;
     mapping(uint => SavingsGoal) public savingsGoals;
     mapping(uint => AutomatedDeposit) public automatedDeposits;
@@ -72,9 +72,9 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
             _aToken
         );
 
-        // Track deposit and savings token
+        // // Track deposit and savings token
         // tokenTracking = new TokenTracking(_depositToken, _aToken);
-        // goalzTokens[_depositToken] = _goalzToken;
+        goalzTokens[_depositToken] = _goalzToken;
         emit GoalzTokenCreated(_depositToken, address(_goalzToken));
     }
 
@@ -140,6 +140,8 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
             goal.complete = true;
             emit GoalCompleted(msg.sender, goalId, goal.targetAmount);
         }
+
+        // tokenTracking.deposit(amount, msg.sender);
 
         _deposit(msg.sender, goal, amount);
 
@@ -230,6 +232,8 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         }
 
         _automatedDeposit.lastDeposit = block.timestamp;
+
+        // tokenTracking.deposit(amount, ownerOf(goalId));
 
         emit DepositMade(ownerOf(goalId), goalId, amount);
     }
