@@ -7,7 +7,6 @@ const { expect } = require("chai");
 
 // Integration testing for the base blockchain
 // Hardhat must be configured to work with a fork of the Base mainnet
-
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 // As of block 2332266
@@ -80,7 +79,6 @@ xdescribe("SavingsGoal", function () {
     const usdcWhaleBalance = await usdc.balanceOf(usdcWhale.address);
     console.log("USDC whale balance:", usdcWhaleBalance.toString());
 
-
     // Transfer user1 some USDC
     console.log("Transferring USDC to user1");
     await usdc.connect(usdcWhale).transfer(user1.address, "1000000000");
@@ -112,16 +110,20 @@ xdescribe("SavingsGoal", function () {
       
       // Create a savings goal for user1
       await savingsGoal.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate);
+
       // Approve the savings goal contract to spend user1's tokens
       const savingsGoalAddress = await savingsGoal.getAddress();
       await usdc.connect(user1).approve(savingsGoalAddress, ethers.MaxUint256);
+
       // Make a deposit to user1's savings goal
       // log the user1 balance before the deposit
       const user1BalanceBefore = await usdc.balanceOf(user1.address);
       await savingsGoal.connect(user1).deposit(0, depositAmount);
+
       // Expect the currentAmount is equal to the depositAmount
       const goal = await savingsGoal.savingsGoals(0);
       expect(goal.currentAmount).to.equal(depositAmount);
+
       // Expect the balances for the savings goal contract and user1 to have changed
       const user1BalanceAfter = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter = await usdc.balanceOf(await savingsGoal.getAddress());
@@ -129,11 +131,14 @@ xdescribe("SavingsGoal", function () {
       expect(user1BalanceAfter).to.equal("995000000");
       expect(savingsGoalBalanceAfter).to.equal("5000000");
       expect(goalzTokenBalanceAfter).to.equal("5000000");
+
       // Make another deposit to complete the goal
       await savingsGoal.connect(user1).deposit(0, depositAmount); 
+
       // Expect the currentAmount is equal to the targetAmount
       const goal2 = await savingsGoal.savingsGoals(0);
       expect(goal2.currentAmount).to.equal(targetAmount);
+
       // Expect the balances for the savings goal contract and user1 to have changed
       const user1BalanceAfter2 = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter2 = await usdc.balanceOf(await savingsGoal.getAddress());
@@ -141,11 +146,14 @@ xdescribe("SavingsGoal", function () {
       expect(user1BalanceAfter2).to.equal("990000000");
       expect(savingsGoalBalanceAfter2).to.equal("10000000");
       expect(goalzTokenBalanceAfter2).to.equal("10000000");
+
       // Withdraw the funds from the savings goal
       await savingsGoal.connect(user1).withdraw(0);
+
       // Expect the currentAmount is equal to 0
       const goal3 = await savingsGoal.savingsGoals(0);
       expect(goal3.currentAmount).to.equal(0);
+
       // Expect the balances for the savings goal contract and user1 to have changed
       const user1BalanceAfter3 = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter3 = await usdc.balanceOf(await savingsGoal.getAddress());
@@ -162,46 +170,60 @@ xdescribe("SavingsGoal", function () {
       
       // Create a savings goal for user1
       await savingsGoal.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate);
+
       // Approve the savings goal contract to spend user1's tokens
       const savingsGoalAddress = await savingsGoal.getAddress();
       await usdc.connect(user1).approve(savingsGoalAddress, ethers.MaxUint256);
+
       // Create an automated deposit for user1
       await savingsGoal.connect(user1).automateDeposit(0, automatedDepositAmount, automatedDepositFrequency);
+
       // Expect the automated deposit to have been created
       const automatedDeposit = await savingsGoal.automatedDeposits(0);
       expect(automatedDeposit.amount).to.equal(automatedDepositAmount);
       expect(automatedDeposit.frequency).to.equal(automatedDepositFrequency);
+
       // Increase the time by 1 day
       await network.provider.send("evm_increaseTime", [86400]);
       await network.provider.send("evm_mine");
+
       // Trigger the automated deposit to make a deposit
       await savingsGoal.connect(automatoor).automatedDeposit(0);
+
       // Expect the currentAmount is equal to the automatedDepositAmount
       const goal = await savingsGoal.savingsGoals(0);
       expect(goal.currentAmount).to.equal(automatedDepositAmount);
+
       // Expect the balances for the savings goal contract and user1 to have changed
       const user1BalanceAfter = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter = await usdc.balanceOf(await savingsGoal.getAddress());
       expect(user1BalanceAfter).to.equal("995000000");
       expect(savingsGoalBalanceAfter).to.equal("5000000");
+
       // Increase the time by 1 day
       await network.provider.send("evm_increaseTime", [86400]);
       await network.provider.send("evm_mine");
+
       // Trigger the automated deposit to make a deposit
       await savingsGoal.connect(automatoor).automatedDeposit(0);
+
       // Expect the currentAmount is equal to the targetAmount
       const goal2 = await savingsGoal.savingsGoals(0);
       expect(goal2.currentAmount).to.equal(targetAmount);
+
       // Expect the balances for the savings goal contract and user1 to have changed
       const user1BalanceAfter2 = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter2 = await usdc.balanceOf(await savingsGoal.getAddress());
       expect(user1BalanceAfter2).to.equal("990000000");
       expect(savingsGoalBalanceAfter2).to.equal("10000000");
+
       // Withdraw the funds from the savings goal
       await savingsGoal.connect(user1).withdraw(0);
+
       // Expect the currentAmount is equal to 0
       const goal3 = await savingsGoal.savingsGoals(0);
       expect(goal3.currentAmount).to.equal(0);
+      
       // Expect the balances for the savings goal contract and user1 to have changed
       const user1BalanceAfter3 = await usdc.balanceOf(user1.address);
       const savingsGoalBalanceAfter3 = await usdc.balanceOf(await savingsGoal.getAddress());
