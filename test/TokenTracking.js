@@ -109,63 +109,63 @@ describe("Deposit & Savings", function () {
     });
   });
 
-  describe("Token Tracking", function () {
-    it("should get transaction info", async function () {
-      const { goalz, usdc, goalzUSD, aUSDC, tokenTracking } = await loadFixture(deployGoalzFixture);
-      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
+  // describe("Token Tracking", function () {
+  //   it("should get transaction info", async function () {
+  //     const { goalz, usdc, goalzUSD, aUSDC, tokenTracking } = await loadFixture(deployGoalzFixture);
+  //     await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
       
-      const userBalanceBefore = await usdc.balanceOf(user1.address);
-      const goalzBalanceBefore = await usdc.balanceOf(await goalz.getAddress());
-      const goalzUSDBalanceBefore = await goalzUSD.balanceOf(user1.address);
+  //     const userBalanceBefore = await usdc.balanceOf(user1.address);
+  //     const goalzBalanceBefore = await usdc.balanceOf(await goalz.getAddress());
+  //     const goalzUSDBalanceBefore = await goalzUSD.balanceOf(user1.address);
+
+  //     await expect(goalz.connect(user1).deposit(0, depositAmount))
+  //       .to.emit(goalz, "DepositMade")
+  //       .withArgs(user1.address, 0, depositAmount);
+
+  //     const userBalanceAfter = await usdc.balanceOf(user1.address);
+  //     const goalzBalanceAfter = await usdc.balanceOf(await goalz.getAddress());
+  //     const goalzUSDBalanceAfter = await goalzUSD.balanceOf(user1.address);
+      
+  //   });
+  // });
+
+  describe("Deposits", function () {
+    it("should get information about a deposit transaction", async function () {
+      const { goalz, usdc, goalzUSD, aUSDC, tokenTracking } = await loadFixture(deployGoalzFixture);
+      
+      await goalz.connect(user1).setGoal("Car", "Buy a BMW with twin turbo mods", targetAmount, targetDate, usdcAddress);
 
       await expect(goalz.connect(user1).deposit(0, depositAmount))
         .to.emit(goalz, "DepositMade")
         .withArgs(user1.address, 0, depositAmount);
-
-      const userBalanceAfter = await usdc.balanceOf(user1.address);
-      const goalzBalanceAfter = await usdc.balanceOf(await goalz.getAddress());
-      const goalzUSDBalanceAfter = await goalzUSD.balanceOf(user1.address);
-      
-    });
-  });
-
-  describe("Deposits and Withdrawals", function () {
-    it("should deposit funds into a savings goal", async function () {
-      const { goalz, usdc, goalzUSD, aUSDC, tokenTracking } = await loadFixture(deployGoalzFixture);
-      
-      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
-      
-      const userBalanceBefore = await usdc.balanceOf(user1.address);
-      const goalzBalanceBefore = await usdc.balanceOf(await goalz.getAddress());
-      const goalzUSDBalanceBefore = await goalzUSD.balanceOf(user1.address);
-
-      // Run an add deposit token here
-      // function _addDepositToken(address _depositToken, address _aToken)
-      // goalz.connect()
-
-      await expect(goalz.connect(user1).deposit(0, depositAmount))
-        .to.emit(goalz, "DepositMade")
-        .withArgs(user1.address, 0, depositAmount);
-
-      const userBalanceAfter = await usdc.balanceOf(user1.address);
-      const goalzBalanceAfter = await usdc.balanceOf(await goalz.getAddress());
-      const goalzUSDBalanceAfter = await goalzUSD.balanceOf(user1.address);
-      // const aUSDCBalance = await aUSDC.balanceOf(await goalz.getAddress());
 
       await tokenTracking.deposit(depositAmount, user1);
       const history1 = await tokenTracking.history(user1.address, 1);
-
-      // expect(userBalanceAfter).to.equal(userBalanceBefore - depositAmount);
-      // expect(goalzBalanceAfter).to.equal(goalzBalanceBefore);
-      // expect(goalzUSDBalanceAfter).to.equal(goalzUSDBalanceBefore + depositAmount);
-
 
       expect(history1.token).to.equal(wethAddress);
       expect(history1.amount).to.equal(depositAmount);
       expect(history1.eventType).to.equal("deposit");
 
     });
+  });
 
-    
+  describe("Savings", function () {
+    it("should get information about a savings transaction", async function () {
+      const { goalz, usdc, goalzUSD, aUSDC, tokenTracking } = await loadFixture(deployGoalzFixture);
+      
+      await goalz.connect(user1).setGoal("Car", "Buy a BMW with twin turbo mods", targetAmount, targetDate, usdcAddress);
+
+      await expect(goalz.connect(user1).deposit(0, depositAmount))
+        .to.emit(goalz, "DepositMade")
+        .withArgs(user1.address, 0, depositAmount);
+
+      await tokenTracking.saving(depositAmount, user1);
+      const history1 = await tokenTracking.history(user1.address, 1);
+
+      expect(history1.token).to.equal(usdcAddress);
+      expect(history1.amount).to.equal(depositAmount);
+      expect(history1.eventType).to.equal("saving");
+
+    });
   });
 });
