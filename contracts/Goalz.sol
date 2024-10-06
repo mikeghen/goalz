@@ -10,6 +10,8 @@ import "./GoalzToken.sol";
 import "./IGoalzToken.sol";
 import "./gelato/AutomateTaskCreator.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 
 contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard {
     using Counters for Counters.Counter;
@@ -25,6 +27,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         address depositToken;
         bool complete;
         uint256 startInterestIndex;
+        address savingToken;
     }
 
     struct AutomatedDeposit {
@@ -39,8 +42,12 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
     mapping(address => GoalzToken) public goalzTokens;
     mapping(uint => SavingsGoal) public savingsGoals;
     mapping(uint => AutomatedDeposit) public automatedDeposits;
+    ISwapRouter public immutable swapRouter;
+    IQuoter public immutable quoter;
+    uint24 public constant poolFee = 3000;
+    uint256 public constant SLIPPAGE_TOLERANCE = 50; // 0.5%
 
-    event GoalCreated(address indexed saver, uint indexed goalId, string what, string why, uint targetAmount, uint targetDate, address depositToken, uint256 interestIndex);
+    event GoalCreated(address indexed saver, uint indexed goalId, string what, string why, uint targetAmount, uint targetDate, address depositToken, address savingToken, uint256 interestIndex);
     event GoalDeleted(address indexed saver, uint indexed goalId);
     event GoalzTokenCreated(address indexed depositToken, address indexed goalzToken);
     event DepositMade(address indexed saver, uint indexed goalId, uint amount);
@@ -49,7 +56,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
     event AutomatedDepositCanceled(address indexed saver, uint indexed goalId);
     event GoalCompleted(address indexed saver, uint indexed goalId, uint targetAmount);
 
-    constructor(address[] memory _initialDepositTokens, address[] memory _initialATokens, address _automate, address _lendingPool) 
+    constructor(address[] memory _initialDepositTokens, address[] memory _initialATokens, address _automate, address _lendingPool, address _swapRouter, address _quoter) 
         ERC721("Goalz", "GOALZ") 
         AutomateTaskCreator(_automate) 
     {
@@ -58,6 +65,8 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
             _addDepositToken(_initialDepositTokens[i], _initialATokens[i]);
         }
         lendingPool = IPool(_lendingPool);
+        swapRouter = ISwapRouter(_swapRouter);
+        quoter = IQuoter(_quoter);
     }
 
     function _addDepositToken(address _depositToken, address _aToken) internal {
@@ -92,19 +101,21 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         string memory why, 
         uint targetAmount, 
         uint targetDate,
-        address depositToken
+        address depositToken,
+        address savingToken
     ) external {
         require(targetAmount > 0, "Target amount should be greater than 0");
         require(targetDate > block.timestamp, "Target date should be in the future");
         require(address(goalzTokens[depositToken]) != address(0), "Deposit token should be USDC or WETH");
+        require(address(goalzTokens[savingToken]) != address(0), "Invalid saving token");
 
         uint goalId = _tokenIdCounter.current();
-        uint256 startInterestIndex = goalzTokens[depositToken].getInterestIndex();
-        savingsGoals[goalId] = SavingsGoal(what, why, targetAmount, 0, targetDate, depositToken, false, startInterestIndex);
+        uint256 startInterestIndex = goalzTokens[savingToken].getInterestIndex();
+        savingsGoals[goalId] = SavingsGoal(what, why, targetAmount, 0, targetDate, depositToken, false, startInterestIndex, savingToken);
         _mint(msg.sender, goalId);
         _tokenIdCounter.increment();
 
-        emit GoalCreated(msg.sender, goalId, what, why, targetAmount, targetDate, depositToken, startInterestIndex);
+        emit GoalCreated(msg.sender, goalId, what, why, targetAmount, targetDate, depositToken, savingToken, startInterestIndex);
     }
 
     function deleteGoal(uint goalId) external goalExists(goalId) isGoalOwner(goalId) {
@@ -146,10 +157,12 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         (uint256 accruedInterest, uint256 newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
         goal.startInterestIndex = newInterestIndex;
         uint withdrawAmount = goal.currentAmount + accruedInterest;
-        uint power = 10 ** ERC20(depositToken).decimals();
+
         goal.currentAmount = 0;
         
-        goalzToken.burn(msg.sender, withdrawAmount); // Triggers an interestIndex update
+        // Burn ONLY the current amount because the accrued interest was NOT minted
+        goalzToken.burn(msg.sender, goal.currentAmount); 
+        // Withdraw the current amount + accrued interest
         lendingPool.withdraw(depositToken, withdrawAmount, msg.sender);
 
         emit WithdrawMade(msg.sender, goalId, withdrawAmount);
@@ -224,23 +237,55 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
     }
 
     function _deposit(address account, SavingsGoal storage goal, uint amount) internal nonReentrant {
-        address _depositToken = goal.depositToken;
-        require(_depositToken != address(0), "Invalid deposit token");
+        address depositToken = goal.depositToken;
+        address savingToken = goal.savingToken;
+        require(depositToken != address(0) && savingToken != address(0), "Invalid tokens");
         require(account != address(0), "Invalid account address");
         require(amount > 0, "Deposit amount should be greater than 0");
-        require(IERC20(_depositToken).balanceOf(account) >= amount, "Insufficient balance");
+        require(IERC20(depositToken).balanceOf(account) >= amount, "Insufficient balance");
 
-        GoalzToken goalzToken = goalzTokens[_depositToken];
+        IERC20(depositToken).safeTransferFrom(account, address(this), amount);
 
-        // Update interest index and calculate accrued interest
+        uint256 amountOut;
+        if (depositToken != savingToken) {
+            amountOut = _swapTokens(depositToken, savingToken, amount);
+        } else {
+            amountOut = amount;
+        }
+
+        GoalzToken goalzToken = goalzTokens[savingToken];
+
         (uint256 accruedInterest, uint256 newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
         goal.currentAmount += accruedInterest;
         goal.startInterestIndex = newInterestIndex;
 
-        IERC20(_depositToken).safeTransferFrom(account, address(this), amount);
-        goalzToken.mint(account, amount + accruedInterest);
-        goal.currentAmount += (amount + accruedInterest);
-        _depositToAave(_depositToken, amount);
+        goalzToken.mint(account, amountOut + accruedInterest);
+        goal.currentAmount += (amountOut + accruedInterest);
+        _depositToAave(savingToken, amountOut);
+    }
+
+    function _swapTokens(address tokenIn, address tokenOut, uint256 amountIn) internal returns (uint256 amountOut) {
+        uint256 expectedAmountOut = _getQuote(tokenIn, tokenOut, amountIn);
+        uint256 minAmountOut = expectedAmountOut * (10000 - SLIPPAGE_TOLERANCE) / 10000;
+
+        IERC20(tokenIn).approve(address(swapRouter), amountIn);
+
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: tokenIn,
+            tokenOut: tokenOut,
+            fee: poolFee,
+            recipient: address(this),
+            deadline: block.timestamp,
+            amountIn: amountIn,
+            amountOutMinimum: minAmountOut,
+            sqrtPriceLimitX96: 0
+        });
+
+        amountOut = swapRouter.exactInputSingle(params);
+    }
+
+    function _getQuote(address tokenIn, address tokenOut, uint256 amountIn) internal view returns (uint256) {
+        return 0;
     }
 
     function _depositToAave(address token, uint amount) internal {

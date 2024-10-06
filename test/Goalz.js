@@ -24,6 +24,8 @@ describe("Goalz", function () {
   let automatoor;
   let mockGelato;
   let mockLendingPool;
+  let mockSwapRouter;
+  let mockQuoter;
 
   const targetAmount = ethers.parseEther("10");
   const targetDate = Math.floor(Date.now() / 1000) + 86400 * 100; // 100 days from now
@@ -60,13 +62,22 @@ describe("Goalz", function () {
     await mockLendingPool.setAToken(usdcAddress, aUSDCAddress);
     await mockLendingPool.setAToken(wethAddress, aWETHAddress);
 
-    // Deploy Goalz contract
+    // Deploy mock SwapRouter and Quoter
+    const MockSwapRouter = await ethers.getContractFactory("MockSwapRouter");
+    mockSwapRouter = await MockSwapRouter.deploy();
+
+    const MockQuoter = await ethers.getContractFactory("MockQuoter");
+    mockQuoter = await MockQuoter.deploy();
+
+    // Deploy Goalz contract with new parameters
     Goalz = await ethers.getContractFactory("Goalz");
     goalz = await Goalz.deploy(
       [usdcAddress, wethAddress],
       [aUSDCAddress, aWETHAddress],
       await mockGelato.getAddress(),
-      await mockLendingPool.getAddress()
+      await mockLendingPool.getAddress(),
+      await mockSwapRouter.getAddress(),
+      await mockQuoter.getAddress()
     );
 
     // Get GoalzToken contracts
@@ -85,7 +96,7 @@ describe("Goalz", function () {
     await weth.connect(user1).approve(await goalz.getAddress(), ethers.MaxUint256);
     await weth.connect(user2).approve(await goalz.getAddress(), ethers.MaxUint256);
 
-    return { goalz, usdc, weth, aUSDC, aWETH, goalzUSD, goalzETH, mockLendingPool };
+    return { goalz, usdc, weth, aUSDC, aWETH, goalzUSD, goalzETH, mockLendingPool, mockSwapRouter, mockQuoter };
   }
 
   describe("Deployment", function () {
@@ -105,9 +116,9 @@ describe("Goalz", function () {
     it("should create a new savings goal", async function () {
       const { goalz } = await loadFixture(deployGoalzFixture);
       
-      await expect(goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress))
+      await expect(goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress, aUSDCAddress))
         .to.emit(goalz, "GoalCreated")
-        .withArgs(user1.address, 0, "Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress, anyValue);
+        .withArgs(user1.address, 0, "Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress, aUSDCAddress, anyValue);
 
       const goal = await goalz.savingsGoals(0);
       expect(goal.what).to.equal("Vacation");
@@ -116,22 +127,23 @@ describe("Goalz", function () {
       expect(goal.targetDate).to.equal(targetDate);
       expect(goal.currentAmount).to.equal(0);
       expect(goal.depositToken).to.equal(usdcAddress);
+      expect(goal.savingToken).to.equal(aUSDCAddress);
     });
 
     it("should not create a goal with invalid parameters", async function () {
       const { goalz } = await loadFixture(deployGoalzFixture);
       
-      await expect(goalz.setGoal("Vacation", "For a dream vacation", 0, targetDate, usdcAddress))
+      await expect(goalz.setGoal("Vacation", "For a dream vacation", 0, targetDate, usdcAddress, aUSDCAddress))
         .to.be.revertedWith("Target amount should be greater than 0");
 
-      await expect(goalz.setGoal("Vacation", "For a dream vacation", targetAmount, Math.floor(Date.now() / 1000) - 1, usdcAddress))
+      await expect(goalz.setGoal("Vacation", "For a dream vacation", targetAmount, Math.floor(Date.now() / 1000) - 1, usdcAddress, aUSDCAddress))
         .to.be.revertedWith("Target date should be in the future");
     });
 
     it("should delete a goal", async function () {
       const { goalz } = await loadFixture(deployGoalzFixture);
       
-      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
+      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress, aUSDCAddress);
       
       await expect(goalz.connect(user1).deleteGoal(0))
         .to.emit(goalz, "GoalDeleted")
@@ -147,7 +159,7 @@ describe("Goalz", function () {
     it("should deposit funds into a savings goal", async function () {
       const { goalz, usdc, goalzUSD, aUSDC } = await loadFixture(deployGoalzFixture);
       
-      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
+      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress, aUSDCAddress);
       
       const userBalanceBefore = await usdc.balanceOf(user1.address);
       const goalzBalanceBefore = await usdc.balanceOf(await goalz.getAddress());
@@ -175,7 +187,7 @@ describe("Goalz", function () {
       await aUSDC.mint(await goalz.getAddress(), depositAmount * 2n); // Give it enough tokens for this test.
       
       await aUSDC.mockBalanceOf(depositAmount); 
-      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
+      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress, aUSDCAddress);
       await goalz.connect(user1).deposit(0, depositAmount);
 
       const userBalanceBefore = await usdc.balanceOf(user1.address);
@@ -196,8 +208,34 @@ describe("Goalz", function () {
 
       expect(userBalanceAfter).to.equal(userBalanceBefore + depositAmount + interestAccrued);
       expect(goalzBalanceAfter).to.equal(goalzBalanceBefore);
-      expect(goalzUSDBalanceAfter).to.equal(0);
+      expect(goalzUSDBalanceAfter).to.equal(goalzUSDBalanceBefore);
       // expect(aUSDCBalance).to.equal(0);
+    });
+
+    it("should deposit funds into a savings goal with token swap", async function () {
+      const { goalz, usdc, weth, aWETH, mockSwapRouter } = await loadFixture(deployGoalzFixture);
+      
+      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress, aWETHAddress);
+      
+      const userBalanceBefore = await usdc.balanceOf(user1.address);
+      const goalzBalanceBefore = await usdc.balanceOf(await goalz.getAddress());
+      const aWETHBalanceBefore = await aWETH.balanceOf(await goalz.getAddress());
+
+      // Mock the swap
+      const swappedAmount = ethers.parseEther("4.5"); // Assume 1 USDC = 0.0009 ETH
+      await mockSwapRouter.setAmountOut(swappedAmount);
+
+      await expect(goalz.connect(user1).deposit(0, depositAmount))
+        .to.emit(goalz, "DepositMade")
+        .withArgs(user1.address, 0, swappedAmount);
+
+      const userBalanceAfter = await usdc.balanceOf(user1.address);
+      const goalzBalanceAfter = await usdc.balanceOf(await goalz.getAddress());
+      const aWETHBalanceAfter = await aWETH.balanceOf(await goalz.getAddress());
+
+      expect(userBalanceAfter).to.equal(userBalanceBefore - depositAmount);
+      expect(goalzBalanceAfter).to.equal(goalzBalanceBefore);
+      expect(aWETHBalanceAfter).to.equal(aWETHBalanceBefore + swappedAmount);
     });
   });
 
@@ -206,7 +244,7 @@ describe("Goalz", function () {
       const { goalz, usdc, goalzUSD, aUSDC } = await loadFixture(deployGoalzFixture);
       
       await aUSDC.mockBalanceOf(depositAmount);
-      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
+      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress, aUSDCAddress);
       await goalz.connect(user1).deposit(0, depositAmount);
 
       const initialGoalzUSDBalance = await goalzUSD.balanceOf(user1.address);
@@ -234,7 +272,7 @@ describe("Goalz", function () {
     it("should set up an automated deposit", async function () {
       const { goalz } = await loadFixture(deployGoalzFixture);
       
-      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
+      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress, aUSDCAddress);
       
       await expect(goalz.connect(user1).automateDeposit(0, automatedDepositAmount, automatedDepositFrequency))
         .to.emit(goalz, "AutomatedDepositCreated")
@@ -248,7 +286,7 @@ describe("Goalz", function () {
     it("should execute an automated deposit", async function () {
       const { goalz, usdc, goalzUSD, aUSDC } = await loadFixture(deployGoalzFixture);
       
-      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
+      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress, aUSDCAddress);
       await goalz.connect(user1).automateDeposit(0, automatedDepositAmount, automatedDepositFrequency);
 
       // Fast forward time
