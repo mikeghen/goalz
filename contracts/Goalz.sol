@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./GoalzToken.sol";
-import "./IGoalzToken.sol";
+//import "./IGoalzToken.sol";
 import "./gelato/AutomateTaskCreator.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
@@ -124,14 +124,16 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         SavingsGoal storage goal = savingsGoals[goalId];
         require(goal.depositToken != address(0), "Invalid deposit token");
         require(goal.currentAmount + amount <= goal.targetAmount, "Deposit exceeds the goal target amount");
+        if (goal.currentAmount == 0) {
+            goal.startInterestIndex = goalzTokens[goal.depositToken].getInterestIndex();
+        }
 
-        if(goal.currentAmount + amount == goal.targetAmount) {
+        if(goal.currentAmount + amount >= goal.targetAmount) {
             goal.complete = true;
             emit GoalCompleted(msg.sender, goalId, goal.targetAmount);
         }
 
         _deposit(msg.sender, goal, amount);
-
         emit DepositMade(msg.sender, goalId, amount);
     }
 
@@ -139,20 +141,18 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         SavingsGoal storage goal = savingsGoals[goalId];
         require(goal.currentAmount > 0, "No funds to withdraw");
         require(goal.depositToken != address(0), "Invalid deposit token");
-
         address depositToken = goal.depositToken;
         GoalzToken goalzToken = goalzTokens[depositToken];
 
         // Update interest index and calculate accrued interest
         (uint256 accruedInterest, uint256 newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
         goal.startInterestIndex = newInterestIndex;
+        goal.currentAmount += accruedInterest;
         // mint interest to goal.saver
-        console.log("accruedInterest xx", accruedInterest);
         goalzToken.mint(msg.sender, accruedInterest);
-        uint withdrawAmount = goal.currentAmount + accruedInterest;
+        uint withdrawAmount = goal.currentAmount;
         uint power = 10 ** ERC20(depositToken).decimals();
         goal.currentAmount = 0;
-        
         goalzToken.burn(msg.sender, withdrawAmount); // Triggers an interestIndex update
         lendingPool.withdraw(depositToken, withdrawAmount, msg.sender);
 
@@ -217,7 +217,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
 
         _deposit(ownerOf(goalId), goal, amount);
 
-        if(goal.currentAmount == goal.targetAmount) {
+        if(goal.currentAmount >= goal.targetAmount) {
             goal.complete = true;
             emit GoalCompleted(ownerOf(goalId), goalId, goal.targetAmount);
         }
@@ -237,11 +237,11 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         GoalzToken goalzToken = goalzTokens[_depositToken];
 
         // Update interest index and calculate accrued interest
-        (uint256 accruedInterest, uint256 newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
-        goal.currentAmount += accruedInterest;
+        uint256 accruedInterest;
+        uint256 newInterestIndex;
+        (accruedInterest, newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
+    //    goal.currentAmount += accruedInterest;
         goal.startInterestIndex = newInterestIndex;
-//        console.log("amount", amount);
-//        console.log("Accrued interest", accruedInterest);
 
         IERC20(_depositToken).safeTransferFrom(account, address(this), amount);
         goalzToken.mint(account, amount + accruedInterest);
@@ -258,12 +258,18 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         lendingPool.withdraw(token, amount, address(this));
     }
 
-    function balanceOf(uint _goalId) internal view returns (uint) {
+    function balanceOf(uint _goalId) internal returns (uint) {
         SavingsGoal storage _goal = savingsGoals[_goalId];
         address _depositToken = _goal.depositToken;
         // Use the next interest index to calculate the current amount
-        uint currentInterestIndex = goalzTokens[_depositToken].getNextInterestIndex();
-        return  _goal.currentAmount * 10 ** ERC20(_depositToken).decimals() + (currentInterestIndex - _goal.startInterestIndex);
+        goalzTokens[_depositToken].updateInterestIndex();
+        
+        uint256 currentInterestIndex = goalzTokens[_depositToken].getInterestIndex();
+        // goalzTokens[_depositToken].getNextInterestIndex();
+        
+        uint256 balance =  _goal.currentAmount * 10 ** ERC20(_depositToken).decimals() + (currentInterestIndex - _goal.startInterestIndex);
+        _goal.startInterestIndex = currentInterestIndex;
+        return balance;
     }
 
     /// @notice Disable transfers of tokens except for minting and burning
