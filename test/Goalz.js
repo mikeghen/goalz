@@ -248,6 +248,128 @@ describe("Goalz", function () {
       expect(finalUser1Balance-currentUser1Balance).to.be.gt(newBalance - BigInt(1000000000000000));
 
     });
+    it("accrue interest two goals", async function () {
+      const { goalz, usdc, goalzUSD, aUSDC } = await loadFixture(deployGoalzFixture);
+      
+      await usdc.mint(await mockLendingPool.getAddress(), depositAmount * 2n); // Give it enough tokens for this test.
+      await aUSDC.mint(await goalz.getAddress(), depositAmount * 2n); // Give it enough tokens for this test.
+      
+      await aUSDC.mockBalanceOf(depositAmount);
+      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
+      await goalz.connect(user1).deposit(0, depositAmount);
+
+      await goalz.connect(user2).setGoal("Lambo", "For a fun driving experience", targetAmount, targetDate, usdcAddress);
+      await goalz.connect(user2).deposit(1, depositAmount);
+
+      const initialUser1Balance = await usdc.balanceOf(user1.address);
+      const initialUser2Balance = await usdc.balanceOf(user2.address);
+
+      const initialUser1GoalzUSDBalance = await goalzUSD.balanceOf(user1.address);
+      const initialUser2GoalzUSDBalance = await goalzUSD.balanceOf(user2.address);
+
+      // Simulate interest accrual
+      let newBalance = depositAmount * BigInt(105) / BigInt(100); // 5% increase
+      newBalance = newBalance * BigInt(2);
+      
+      await aUSDC.mockBalanceOf(newBalance);
+
+      // Fast forward time
+      await time.increase(365 * 24 * 60 * 60); // 1 year
+
+      // Trigger an update of the interest index
+      await goalz.connect(user1).deposit(0, depositAmount);
+      await goalz.connect(user2).deposit(1, depositAmount);
+      
+      newBalance = newBalance + (BigInt(2) * (depositAmount + BigInt(1000000000000)));
+      newBalance = newBalance * BigInt(105) / BigInt(100);
+      await aUSDC.mockBalanceOf(newBalance);
+      // Fast forward time
+      await time.increase(365 * 24 * 60 * 60); // 1 year
+
+      // Trigger an update of the interest index
+      const currentUser1Balance = await usdc.balanceOf(user1.address);
+      const currentUser2Balance = await usdc.balanceOf(user2.address);
+      await goalz.connect(user1).withdraw(0);
+      await goalz.connect(user2).withdraw(1);
+
+      const finalUser1Balance = await usdc.balanceOf(user1.address);
+      const finalUser2Balance = await usdc.balanceOf(user2.address);
+      const dividedBalance = newBalance / BigInt(2);
+      expect(finalUser1Balance).to.be.lt(initialUser1Balance + dividedBalance);
+      expect(finalUser1Balance-currentUser1Balance).to.be.gt(dividedBalance - BigInt(1000000000000000));
+      expect(finalUser2Balance).to.be.lt(initialUser2Balance + dividedBalance);
+      expect(finalUser2Balance-currentUser2Balance).to.be.gt(dividedBalance - BigInt(1000000000000000));
+    });
+
+    it("accrue interest two goals, different deposit amounts and times", async function () {
+      const { goalz, usdc, goalzUSD, aUSDC } = await loadFixture(deployGoalzFixture);
+      
+      await usdc.mint(await mockLendingPool.getAddress(), depositAmount * 4n); // Give it enough tokens for this test.
+      await aUSDC.mint(await goalz.getAddress(), depositAmount * 4n); // Give it enough tokens for this test.
+      const otherDepositAmount = depositAmount / 2n;
+      
+      await goalz.connect(user1).setGoal("Vacation", "For a dream vacation", targetAmount, targetDate, usdcAddress);
+      await goalz.connect(user1).deposit(0, otherDepositAmount);
+      
+      await goalz.connect(user2).setGoal("Lambo", "For a fun driving experience", targetAmount, targetDate, usdcAddress);
+      await goalz.connect(user2).deposit(1, depositAmount);
+      let balance1 = otherDepositAmount;
+      let balance2 = depositAmount;
+      let newBalance = balance1 + balance2;
+      await aUSDC.mockBalanceOf(newBalance);
+
+      const initialUser1Balance = await usdc.balanceOf(user1.address);
+      const initialUser2Balance = await usdc.balanceOf(user2.address);
+
+      const initialUser1GoalzUSDBalance = await goalzUSD.balanceOf(user1.address);
+      const initialUser2GoalzUSDBalance = await goalzUSD.balanceOf(user2.address);
+
+      // Simulate interest accrual one goal, normalized to .5 years;
+      let interest = (otherDepositAmount * BigInt(105)) / BigInt(200); // 5% increase, normalized to .5 years;
+      newBalance += interest; 
+      await aUSDC.mockBalanceOf(newBalance);
+
+      // Fast forward time
+      await time.increase(183* 24 * 60 * 60); // 0.5 year
+
+      // Trigger an update of the interest index
+      await goalz.connect(user1).deposit(0, otherDepositAmount);
+      // do not deposit into the second goal      
+      newBalance = newBalance + otherDepositAmount;
+      newBalance += interest; // 5% increase, normalized to .5 years;
+
+      await aUSDC.mockBalanceOf(newBalance);
+
+      
+      // fast forward to 1.0 year
+      await time.increase(182 * 24 * 60 * 60); // 0.5 year added to the previous 1.0 year
+      // yearly deposit, both goals
+      await goalz.connect(user1).deposit(0, depositAmount);
+      await goalz.connect(user2).deposit(1, depositAmount);
+      await time.increase(365 * 24 * 60 * 60); // 1 year
+
+      newBalance = newBalance + (depositAmount * BigInt(2));
+      newBalance += (newBalance * BigInt(105) / BigInt(100)); // 5% increase, normalized for 1 years;
+      await aUSDC.mockBalanceOf(newBalance);
+
+      const currentUser1Balance = await usdc.balanceOf(user1.address);
+      const currentUser2Balance = await usdc.balanceOf(user2.address);
+      await goalz.connect(user1).withdraw(0);
+      await goalz.connect(user2).withdraw(1);
+
+      const finalUser1Balance = await usdc.balanceOf(user1.address);
+      const finalUser2Balance = await usdc.balanceOf(user2.address);
+      const user1balance = finalUser1Balance - currentUser1Balance;
+      const user2balance = finalUser2Balance - currentUser2Balance;
+      const dividedBalance = newBalance / BigInt(2);
+      expect(user1balance).to.be.lt(user2balance);
+      let totalDeposit = depositAmount * BigInt(2);
+      const maxInterest = totalDeposit * BigInt(112) / BigInt(100);
+      expect(user1balance).to.be.gt(totalDeposit);
+      expect(user2balance).to.be.gt(totalDeposit);
+      expect(user1balance).to.be.lt(totalDeposit + maxInterest);
+      expect(user2balance).to.be.lt(totalDeposit + maxInterest);
+    });
   });
 
   describe("Automated Deposits", function () {

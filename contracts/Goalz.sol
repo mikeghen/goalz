@@ -123,7 +123,8 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
 
         SavingsGoal storage goal = savingsGoals[goalId];
         require(goal.depositToken != address(0), "Invalid deposit token");
-        require(goal.currentAmount + amount <= goal.targetAmount, "Deposit exceeds the goal target amount");
+        // if the deposit is more than the target amount, we should allow it, because compounding interest will make it more than the target amount
+//        require(goal.currentAmount + amount <= goal.targetAmount, "Deposit exceeds the goal target amount");
         if (goal.currentAmount == 0) {
             goal.startInterestIndex = goalzTokens[goal.depositToken].getInterestIndex();
         }
@@ -151,9 +152,9 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         // mint interest to goal.saver
         goalzToken.mint(msg.sender, accruedInterest);
         uint withdrawAmount = goal.currentAmount;
-        uint power = 10 ** ERC20(depositToken).decimals();
+        // uint power = 10 ** ERC20(depositToken).decimals();
         goal.currentAmount = 0;
-        goalzToken.burn(msg.sender, withdrawAmount); // Triggers an interestIndex update
+        goalzToken.burn(msg.sender, withdrawAmount);
         lendingPool.withdraw(depositToken, withdrawAmount, msg.sender);
 
         emit WithdrawMade(msg.sender, goalId, withdrawAmount);
@@ -240,7 +241,6 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         uint256 accruedInterest;
         uint256 newInterestIndex;
         (accruedInterest, newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
-    //    goal.currentAmount += accruedInterest;
         goal.startInterestIndex = newInterestIndex;
 
         IERC20(_depositToken).safeTransferFrom(account, address(this), amount);
