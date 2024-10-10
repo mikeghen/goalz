@@ -11,6 +11,7 @@ contract MockLendingPool {
     uint256 public lastWithdrawAmount;
     address public lastWithdrawToken;
     mapping(address => address) public aTokens; // Maps deposit tokens to their corresponding aTokens
+    uint256 constant interestRate = 1.05 * 10 ** 27; // 5% per year, computed every second
 
     function setAToken(address depositToken, address aToken) external {
         aTokens[depositToken] = aToken;
@@ -40,5 +41,17 @@ contract MockLendingPool {
     function getReserveNormalizedIncome(address asset) external view returns (uint256) {
         require(aTokens[asset] != address(0), "No aToken set for this asset");
         return MockAaveToken(aTokens[asset]).balanceOf(address(this));
+    }
+    // @dev this is a mock function to return the liquidity index of the asset
+    // @dev getReserveData is the actual function that should be used to get the liquidity index
+    // @dev this mock function only returns the liquidity index of the asset
+    // @dev getReserveData returns multiple values, this mock function only returns the liquidity index
+    // @dev check the Aave documentation to see what all the values are
+    // @param asset the address of the asset
+    // @return the liquidity index of the asset
+    function getReserveData(address asset) external view returns (uint256 liquidityIndex) {
+        // interest 5% per year, compute every second
+        liquidityIndex = block.timestamp * interestRate;
+        return liquidityIndex;
     }
 }
