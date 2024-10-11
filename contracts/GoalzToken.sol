@@ -79,12 +79,6 @@ contract GoalzToken is ERC20, ReentrancyGuard, Ownable {
         emit BalanceCheckpointUpdated(_prevBalanceCheckpoint, balanceCheckpoint);
     }
 
-    function updateAndCalculateAccruedInterest(uint256 amount, uint256 startInterestIndex) external onlyOwner returns (uint256 interestAccrued, uint256 currentInterestIndex) {
-        _updateInterestIndex();
-        currentInterestIndex = interestIndex;
-        interestAccrued = (amount * (currentInterestIndex - startInterestIndex)) / (10 ** ERC20(depositToken).decimals());
-    }
-
     // Disable transfers
     function transfer(address, uint256) public pure override returns (bool) {
         revert("Disabled");

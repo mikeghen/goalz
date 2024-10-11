@@ -25,6 +25,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         address depositToken;
         bool complete;
         uint256 startInterestIndex;
+        uint256 endInterestIndex;
     }
 
     struct AutomatedDeposit {
@@ -100,7 +101,7 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
 
         uint goalId = _tokenIdCounter.current();
         uint256 startInterestIndex = goalzTokens[depositToken].getInterestIndex();
-        savingsGoals[goalId] = SavingsGoal(what, why, targetAmount, 0, targetDate, depositToken, false, startInterestIndex);
+        savingsGoals[goalId] = SavingsGoal(what, why, targetAmount, 0, targetDate, depositToken, false, startInterestIndex, 0);
         _mint(msg.sender, goalId);
         _tokenIdCounter.increment();
 
@@ -122,6 +123,12 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
 
         SavingsGoal storage goal = savingsGoals[goalId];
         require(goal.depositToken != address(0), "Invalid deposit token");
+        
+        // If there was previously a withdraw, reset the end interest index
+        if(goal.endInterestIndex != 0) {
+            goal.endInterestIndex = 0;
+        }
+
         require(goal.currentAmount + amount <= goal.targetAmount, "Deposit exceeds the goal target amount");
 
         if(goal.currentAmount + amount == goal.targetAmount) {
@@ -139,20 +146,19 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         require(goal.currentAmount > 0, "No funds to withdraw");
         require(goal.depositToken != address(0), "Invalid deposit token");
 
+        uint power = 10 ** ERC20(goal.depositToken).decimals();
+        uint amount = goal.currentAmount;
         address depositToken = goal.depositToken;
         GoalzToken goalzToken = goalzTokens[depositToken];
+        require(address(goalzToken) != address(0), "Invalid GoalzToken");
 
-        // Update interest index and calculate accrued interest
-        (uint256 accruedInterest, uint256 newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
-        goal.startInterestIndex = newInterestIndex;
-        uint withdrawAmount = goal.currentAmount + accruedInterest;
-        uint power = 10 ** ERC20(depositToken).decimals();
         goal.currentAmount = 0;
-        
-        goalzToken.burn(msg.sender, withdrawAmount); // Triggers an interestIndex update
-        lendingPool.withdraw(depositToken, withdrawAmount, msg.sender);
+        goalzToken.burn(msg.sender, amount); // Triggers an interestIndex update
+        goal.endInterestIndex = goalzToken.getInterestIndex();
+        uint _amountWithInterest = amount * (power + (goal.endInterestIndex - goal.startInterestIndex)) / power;
+        lendingPool.withdraw(depositToken, _amountWithInterest, msg.sender);
 
-        emit WithdrawMade(msg.sender, goalId, withdrawAmount);
+        emit WithdrawMade(msg.sender, goalId, _amountWithInterest);
     }
 
     function automateDeposit(uint goalId, uint amount, uint frequency) external goalExists(goalId) {
@@ -230,16 +236,9 @@ contract Goalz is ERC721, ERC721Enumerable, AutomateTaskCreator, ReentrancyGuard
         require(amount > 0, "Deposit amount should be greater than 0");
         require(IERC20(_depositToken).balanceOf(account) >= amount, "Insufficient balance");
 
-        GoalzToken goalzToken = goalzTokens[_depositToken];
-
-        // Update interest index and calculate accrued interest
-        (uint256 accruedInterest, uint256 newInterestIndex) = goalzToken.updateAndCalculateAccruedInterest(goal.currentAmount, goal.startInterestIndex);
-        goal.currentAmount += accruedInterest;
-        goal.startInterestIndex = newInterestIndex;
-
         IERC20(_depositToken).safeTransferFrom(account, address(this), amount);
-        goalzToken.mint(account, amount + accruedInterest);
-        goal.currentAmount += (amount + accruedInterest);
+        goalzTokens[_depositToken].mint(account, amount);
+        goal.currentAmount += amount;
         _depositToAave(_depositToken, amount);
     }
 
