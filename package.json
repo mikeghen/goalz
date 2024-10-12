@@ -20,6 +20,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@aave/core-v3": "^1.19.3"
+    "@aave/core-v3": "^1.19.3",
+    "@uniswap/v3-periphery": "^1.4.4"
   }
 }
