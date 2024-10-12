@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {MockLendingPool} from "./mocks/MockLendingPool.sol";
+import "hardhat/console.sol";
 
 /// @title GoalzToken
 /// @notice ERC20 token representing a deposit into Goalz. This contract is used for tracking the principal deposits
@@ -15,11 +17,13 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 /// @dev Future work should get these tokens to work like rebasing a tokens themselves. It could be a wrapper around the
 /// getNormalizedIncome function in Aave. 
 contract GoalzToken is ERC20, ReentrancyGuard, Ownable {
-
+//    uint256 constant power = 10 ** 18;
     address public depositToken;
     address public aToken;
     uint256 public interestIndex;
     uint256 public balanceCheckpoint;
+    uint256 constant interestRate = 1.585489495 * 10 ** 20; // 5% per year, computed every second  
+//  MockLendingPool public mLendingPool;
 
     event InterestIndexUpdated(uint256 prevInterestIndex, uint256 newInterestIndex);
     event BalanceCheckpointUpdated(uint256 prevBalanceCheckpoint, uint256 newBalanceCheckpoint);
@@ -28,7 +32,8 @@ contract GoalzToken is ERC20, ReentrancyGuard, Ownable {
     constructor(string memory name, string memory symbol, address _depositToken, address _aToken) ERC20(name, symbol) { 
         depositToken = _depositToken;
         aToken = _aToken;
-        interestIndex = 10 ** ERC20(depositToken).decimals();
+        getNextInterestIndex();
+        // interestIndex = 10 ** ERC20(depositToken).decimals();
     }
 
     /// @dev Checks for zero address, zero amount, and sufficient balance are performed in the Goalz contract
@@ -55,10 +60,11 @@ contract GoalzToken is ERC20, ReentrancyGuard, Ownable {
         return interestIndex;
     }
 
-    function getNextInterestIndex() public view returns (uint256) {
-        // Owner is assumed to be holding aTokens 
-        uint256 currentBalance = ERC20(aToken).balanceOf(owner());
-        return interestIndex * currentBalance / balanceCheckpoint;
+    function getNextInterestIndex() public  {
+    //    interestIndex = mLendingPool.getReserveData(aToken);
+        
+            interestIndex = block.timestamp * interestRate;
+    
     }
 
     function updateInterestIndex() external onlyOwner {
@@ -66,17 +72,19 @@ contract GoalzToken is ERC20, ReentrancyGuard, Ownable {
     }
 
     function _updateInterestIndex() internal {
-        // Owner is assumed to be holding aTokens 
-        uint _prevBalanceCheckpoint = balanceCheckpoint;
-        balanceCheckpoint = ERC20(aToken).balanceOf(owner());
 
-        uint256 _prevIndex = interestIndex;
-        if (_prevBalanceCheckpoint > 0 && balanceCheckpoint > _prevBalanceCheckpoint) {
-            interestIndex = interestIndex + (balanceCheckpoint - _prevBalanceCheckpoint) * 10 ** ERC20(aToken).decimals() / _prevBalanceCheckpoint;
-        }
+        getNextInterestIndex();
+              
+//        emit InterestIndexUpdated(_prevIndex, interestIndex);
+    }
 
-        emit InterestIndexUpdated(_prevIndex, interestIndex);
-        emit BalanceCheckpointUpdated(_prevBalanceCheckpoint, balanceCheckpoint);
+    function updateAndCalculateAccruedInterest(uint256 amount, uint256 startInterestIndex) external onlyOwner returns (uint256 interestAccrued, uint256 currentInterestIndex) {
+        _updateInterestIndex();
+        currentInterestIndex = interestIndex;
+        
+        interestAccrued = (amount * (currentInterestIndex - startInterestIndex)) / 10 ** 29;
+        return (interestAccrued, currentInterestIndex);
+        
     }
 
     // Disable transfers
