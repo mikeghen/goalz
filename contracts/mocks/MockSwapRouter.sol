@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import {ISwapRouter} from "../interfaces/ISwapRouter.sol";
@@ -9,7 +10,7 @@ contract MockSwapRouter {
         amountOut = _amountOut;
     }
 
-    function exactInputSingle(ISwapRouter.ExactInputSingleParams calldata params) external returns (uint256) {
+    function exactInputSingle(ISwapRouter.ExactInputSingleParams calldata params) external view returns (uint256) {
         return amountOut; 
     }
 }
